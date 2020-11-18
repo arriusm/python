@@ -52,7 +52,7 @@
 - example
 
 ```
-  > showfits.py  -f 7,5  -v 2  -b 7  HD12303_r.fit
+  > showfits.py  -figsize 7,5  -v 2  -fitradius 7  HD12303_r.fit
   ['HD12303_r.fit']
   =============================================================================================================
   imagename      HD12303_r.fit
