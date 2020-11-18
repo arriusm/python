@@ -3,25 +3,42 @@
 
 ## showfits
 
-- fits viewer with gaussfit, moffatfit and interactive growing curve analysis
+- fits viewer with gauss fit, moffat fit and interactive growing curve analysis
 
 - options
 
 ```
-   > showfits.py -h
-   usage: showfits.py [-h] [-figsize FIGSIZE] [-v VERBOSE] [-box BOXSIZE]
-                      [imagelist [imagelist ...]]
-   
-   showfits.py (2020-10-302) by Arno Riffeser (arri@usm.lmu.de)
-   
-   positional arguments:
-     imagelist         image list
-   
-   optional arguments:
-     -h, --help        show this help message and exit
-     -figsize FIGSIZE  [7,7] figsize
-     -v VERBOSE        [2] verbose
-     -box BOXSIZE      [9] boxsize
+  > showfits.py -h
+
+  usage: showfits.py [-h] [-figsize FIGSIZE] [-v VERBOSE] [-precaper PRECAPER]
+                     [-maxaper MAXAPER] [-box FITRADIUS]
+                     [imagelist [imagelist ...]]
+  
+  showfits.py (2020-11-18) by Arno Riffeser (arri@usm.lmu.de)
+  
+  positional arguments:
+    imagelist           image list
+  
+  optional arguments:
+    -h, --help          show this help message and exit
+    -figsize FIGSIZE    [8,6] figsize
+    -v VERBOSE          [2] verbose
+    -precaper PRECAPER  [80] precaper
+    -maxaper MAXAPER    [80] maxaper
+    -box FITRADIUS      [9] fitradius
+     usage: showfits.py [-h] [-figsize FIGSIZE] [-v VERBOSE] [-box BOXSIZE]
+                        [imagelist [imagelist ...]]
+     
+     showfits.py (2020-10-302) by Arno Riffeser (arri@usm.lmu.de)
+     
+     positional arguments:
+       imagelist         image list
+     
+     optional arguments:
+       -h, --help        show this help message and exit
+       -figsize FIGSIZE  [7,7] figsize
+       -v VERBOSE        [2] verbose
+       -box BOXSIZE      [9] boxsize
 ```
 
 - runtime commands
@@ -29,10 +46,10 @@
 ```
   > showfits.py 
   usage:
-    1+click - get cutsor
+    1+click - get cursor
     2+click - center gauss
     3+click - center moffat
-    4+click - groving curve
+    4+click - growing curve
     r - reset (zoom home)
     p - pan (move center)
     s - save image
@@ -48,25 +65,24 @@
 - example
 
 ```
-    > showfits.py  -f 8,5  -v 2  -b 15  HD12303_r.fit
-    boxsize= 15
-    ['HD12303_r.fit']
-    =============================================================================================================
-    imagename  =  HD12303_r.fit
-    ima.size         2328       1760
-    cuts            611.0      816.3
-    #                  xc         yc      value
-    pixel            1157        879    5044.00
-    #                  xc         yc    totflux        sky          A       sigx       sigy        phi       fwhm
-    gauss         1157.72     879.03    40919.9     64.356    4807.58       1.22       1.11      20.35       2.74
-    #                  xc         yc    totflux        sky          A       sigx       sigy        phi       fwhm
-    moffat        1157.72     879.03    48260.4     33.130    5292.71       1.80       1.61      16.66       2.46
-    #                  xc         yc    totflux        sky         r0         r1
-    grow.curve    1157.72     879.03    61778.5    680.203       27.2       71.7
-    grow.curve    1157.72     879.03    61778.5    680.203       27.2       71.8
-    ----------------------------------------------------------------------------
-    grow.curve    1157.72     879.03    61778.5    680.203       27.2       71.8
-    ----------------------------------------------------------------------------
+  > showfits.py  -f 7,5  -v 2  -b 7  HD12303_r.fit
+  ['HD12303_r.fit']
+  =============================================================================================================
+  imagename      HD12303_r.fit
+  image(nx,ny)        2328       1760
+  cuts               611.0      816.3
+  #
+  #                  xc         yc      value
+  pixel            1299        982     664.00
+  #                  xc         yc    totflux        sky          A       sigx       sigy        phi       fwhm
+  gauss         1157.72     879.03    40930.1    752.097    4807.42       1.22       1.11      20.35       2.74
+  #                  xc         yc    totflux        sky          A       sigx       sigy        phi       fwhm
+  moffat        1157.72     879.03    48267.8    721.033    5292.47       1.80       1.61      16.68       2.46
+  #                  xc         yc    totflux        sky         r0         r1 errtotflux
+  grow.curve    1157.72     879.03    62003.1    680.147       22.0       55.0     1046.7
+  grow.curve    1157.72     879.03    61948.3    680.161       22.0       57.0     1046.7
+  ---------------------------------------------------------------------------------------
+  grow.curve    1157.72     879.03    61948.3    680.161       22.0       57.0     1046.7
 ```
 
 ## exposure time calculator

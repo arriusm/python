@@ -2,7 +2,7 @@
 #/opt/anaconda3.7/bin/python
 #
 
-# (2020-10-02) by Arno Riffeser (arri@usm.lmu.de)
+# (2020-11-18) by Arno Riffeser (arri@usm.lmu.de)
 
 
 from math import *
@@ -18,13 +18,14 @@ import argparse
 
 class Image_Analyzer:
 
-  def __init__(self, ax, size=15, verbose=2, outfile=None):
+  def __init__(self, ax, fitradius=7, precaper=80, maxaper=80, verbose=2, outfile=None):
       self.ax = ax
       self.ax2 = None
       self.cut_zoom = 1.2
       self.click2 = False
       self.sky = 0.
       self.linec = None
+      self.pointc = None
       self.line1 = None
       self.line2 = None
       self.lineh = None
@@ -32,10 +33,13 @@ class Image_Analyzer:
       self.sky = 0.
       self.rad0 = 0.
       self.rad1 = 0. 
-      self.size = size
+      self.fitradius = fitradius
+      self.precaper = precaper
+      self.maxaper = maxaper
       self.verbose = verbose
       self.r = None
       self.grow = None
+      self.growsky = None
       self.maxgrow = 0.
       self.area = None
       self.sky0 = 0.
@@ -89,21 +93,27 @@ class Image_Analyzer:
   def fit_psf(self, pos, use_moffat=False, verbose=0) :
       xc = int(pos[0]+0.5)
       yc = int(pos[1]+0.5)
-      rad = self.size//2
+      rad = self.fitradius
+      boxsize = 2*rad+1
       x0 = xc-rad
       x1 = xc+rad
       y0 = yc-rad
       y1 = yc+rad
       sky = np.median(self.imamat)
-      DATA = self.imamat[x0-1:x1,y0-1:y1]-sky
+      # print("sky=",sky)
+      # DATA = self.imamat[x0-1:x1,y0-1:y1] - sky    # minus 1 in den indizes wegen image array -> python array
+      DATA = self.imamat[x0-1:x1,y0-1:y1]    # minus 1 in den indizes wegen image array -> python array
       bg = np.median(DATA)
       max = np.max(DATA)
       amp = max-bg
       cen = DATA[rad,rad]
-      x, y = np.linspace(x0, x1, self.size, dtype=float), np.linspace(y0, y1, self.size, dtype=float)
+      # x, y = np.linspace(x0, x1, boxsize, dtype=float), np.linspace(y0, y1,boxsize, dtype=float)
+      x = np.linspace(x0, x1, boxsize, dtype=float)
+      y = np.linspace(y0, y1, boxsize, dtype=float)
+      # print("x,y=",x,y)
       X, Y = np.meshgrid(y,x)
-      # for ix in range(0,self.size) :
-      #     for iy in range(0,self.size) :
+      # for ix in range(0,boxsize) :
+      #     for iy in range(0,boxsize) :
       #         if DATA[ix,iy]==MD :
       #             xc = x[ix]
       #             yc = y[iy]
@@ -183,9 +193,13 @@ class Image_Analyzer:
       self.cut0 = cut0
       self.cut1 = cut1
       self.dcut = cut1 - cut0
+      if verbose>=1 :
+        print("imagename     ", imagename)
       if self.verbose>=2 :
-        print('ima.size   {:10.0f} {:10.0f}'.format(self.nx,self.ny))
-        print('cuts       {:10.1f} {:10.1f}'.format(self.cut0,self.cut1))
+        print('image(nx,ny)  {:10.0f} {:10.0f}'.format(self.nx,self.ny))
+        print('cuts          {:10.1f} {:10.1f}'.format(self.cut0,self.cut1))
+      if verbose>=1 :
+        print("#")
       self.extent = [0.5,self.nx+0.5,0.5,self.ny+0.5]
       self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
       #self.ax.set_xlim([1150,1170])
@@ -226,8 +240,8 @@ class Image_Analyzer:
         self.imshow.figure.canvas.draw_idle()
       if event.key==' ' :
         if verbose>=1 :
-          print('----------------------------------------------------------------------------------------------')
-          self.outfile.write('----------------------------------------------------------------------------------------------\n')
+          print('---------------------------------------------------------------------------------------------------------')
+          self.outfile.write('---------------------------------------------------------------------------------------------------------\n')
 
         
       if event.key=='o' :
@@ -273,30 +287,33 @@ class Image_Analyzer:
         iyc=int(self.yc+0.5)
   
         ####### growing curve
-        prec = 40
-        maxaper = 80;
+        prec = self.precaper
+        maxaper = self.maxaper
         # self.sky0 = np.average(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
         # self.sky0 = np.median(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
         c, low, upp = sigmaclip(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50],3.,2.)
         self.sky0 = np.average(c)
         #print("c, low, upp  = ",np.average(c), low, upp )
 
-        self.r = np.linspace(2.,maxaper,prec)
+        self.r = np.linspace(1.,maxaper,prec)
         #print(self.r)
         aper2 = self.r**2+1.
         self.grow = np.zeros(prec)
         self.area = np.zeros(prec)        
+        self.growsky = np.zeros(prec)
         for i in range(prec) :
           s=0.
           n=0
           for ix in range(ixc-maxaper-1,ixc+maxaper+1) :
             for iy in range(iyc-maxaper-1,iyc+maxaper+1) :
               r2 = (ix-self.xc)**2+(iy-self.yc)**2
-              if r2<=aper2[i] :
+              # if r2<=aper2[i] :
+              if r2<aper2[i] :
                 s += self.imamat[ix-1,iy-1] - self.sky0
                 n += 1
           self.grow[i] = s
           self.area[i] = n
+          self.growsky[i] = s+n*self.sky0
         self.maxgrow = np.max(self.grow)
         grow_min = np.min(self.grow)
         grow_max = np.max(self.grow)
@@ -308,6 +325,7 @@ class Image_Analyzer:
         self.lineg, = self.ax2.plot(self.r,self.grow,color='lightblue',zorder=1)
         self.linef, = self.ax2.plot([None,None],[None,None],color='mistyrose',zorder=0)
         self.linec, = self.ax2.plot(self.r,self.grow,color='b',zorder=3)
+        self.pointc,= self.ax2.plot(self.r,self.grow, marker='o', linestyle=None, ms=3, linewidth=0,color='b',zorder=4)
         self.line1, = self.ax2.plot([None,None],[None,None],color='grey',zorder=2)
         self.line2, = self.ax2.plot([None,None],[None,None],color='grey',zorder=2)
         self.lineh, = self.ax2.plot([None,None],[None,None],color='r',   zorder=2)
@@ -323,8 +341,8 @@ class Image_Analyzer:
         #cid3 = fig2.canvas.mpl_connect('close_event',self.growing_curve_close)
         cid4 = fig2.canvas.mpl_connect('key_press_event',self.keypress)
         if self.verbose>=2 :
-          print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux', 'sky', 'r0', 'r1' ))
-        self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux', 'sky', 'r0', 'r1' ))
+          print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
+        self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
 
         fig2.show()
 
@@ -353,10 +371,15 @@ class Image_Analyzer:
         rfit = np.delete(self.r, notfit)
         areafit = np.delete(self.area, notfit)
         growfit = np.delete(self.grow, notfit)
+        growskyfit = np.delete(self.growsky, notfit)
+        self.rad0 = rfit[0]
+        self.rad1 = rfit[-1]
         # fitlist =  opt.curve_fit(sky, rfit,growfit, x0, sigma)
         # A = np.vstack([rfit**2*np.pi,np.ones(len(rfit))]).T
         A = np.vstack([areafit,np.ones(len(rfit))]).T
-        a2,a0 = np.linalg.lstsq(A, growfit,rcond=None)[0]
+        lstsqfit = np.linalg.lstsq(A, growfit,rcond=None)
+        #print("lstsqfit=",lstsqfit)
+        a2,a0 = lstsqfit[0]
         rx = np.linspace(0.,100,100)
         self.linef.set_xdata(rx)
         self.linef.set_ydata(a2*rx**2*np.pi+a0)
@@ -365,7 +388,22 @@ class Image_Analyzer:
         #print(growfit[0]-a2*areafit[0])
         self.sky = self.sky0 + a2
         new_grow = self.grow - a2*self.area
+        new_growfit = np.delete(new_grow , notfit)
+        totall = growskyfit[0]
+        errtotall = np.sqrt(totall)
+        #totall = self.totflux+self.sky*self.rad0**2*np.pi
+        if self.verbose>=3 :
+          print("rad0 =",self.rad0)
+          print("rad1 =",self.rad1)
+          print("totflux        = ",self.totflux)
+          print("new_growfit[0] = ",new_growfit[0])
+          print("totflux+sky*rad0**2*np.pi = ",self.totflux+self.sky*self.rad0**2*np.pi)
+          #print("totflux+sky*areafit[0]    = ",new_growfit[0]+self.sky*areafit[0])
+          #print("totflux+sky*pi*r0^2       = ",new_growfit[0]+self.sky*areafit[0])
+          print("growskyfit[0]             = ",growskyfit[0])
+          #print("totflux+sky*rfit[0]**2*pi = ",self.totflux+self.sky*rfit[0]**2*np.pi)
         self.linec.set_ydata(new_grow)
+        self.pointc.set_ydata(new_grow)
         self.lineh.set_xdata([self.r[0],self.r[-1]])
         self.lineh.set_ydata([a0,a0])
         new_grow_min = np.min(new_grow)
@@ -385,15 +423,15 @@ class Image_Analyzer:
         self.lineh.figure.canvas.draw_idle()
         #self.click2 = False
         if (event.dblclick) :
-          print('----------------------------------------------------------------------------')
+          print('---------------------------------------------------------------------------------------')
         if self.verbose>=1 :         
-          print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f}'.format('grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1))
+          print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f} {:10.1f}'.format('grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1,errtotall))
         if (event.dblclick) :
-          print('----------------------------------------------------------------------------')
-          self.outfile.write('{:<20} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f}\n'.format(self.imagename,'grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1))
+          print('---------------------------------------------------------------------------------------')
+          self.outfile.write('{:<20} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f} {:10.1f}\n'.format(self.imagename,'grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1,errtotall))
 
   #def growing_curve_close(self, event) :
-      #print('----------------------------------------------------------------------------')
+      #print('---------------------------------------------------------------------------------------')
       #if self.rad0 < self.rad1 :
       #  if self.verbose>=2 :
       #    print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux', 'sky', 'r0', 'r1' ))
@@ -405,25 +443,28 @@ class Image_Analyzer:
         
 ########################### MAIN
 
-parser = argparse.ArgumentParser(description='showfits.py (2020-10-302) by Arno Riffeser (arri@usm.lmu.de)\n')
+parser = argparse.ArgumentParser(description='showfits.py (2020-11-18) by Arno Riffeser (arri@usm.lmu.de)\n')
 parser.add_argument(              'imagelist',       nargs='*',                   help='image list')
-parser.add_argument('-figsize',   dest='figsize',    type=str,   default='7,7',   help='[%(default)s] figsize' )
+parser.add_argument('-figsize',   dest='figsize',    type=str,   default='8,6',   help='[%(default)s] figsize' )
 parser.add_argument('-v',         dest='verbose',    type=int,   default=2,       help='[%(default)s] verbose' )
-parser.add_argument('-box',       dest='boxsize',    type=int,   default='9',     help='[%(default)s] boxsize' )
+parser.add_argument('-precaper',  dest='precaper',   type=int,   default=80,      help='[%(default)s] precaper' )
+parser.add_argument('-maxaper',   dest='maxaper',    type=int,   default=80,      help='[%(default)s] maxaper' )
+parser.add_argument('-box',       dest='fitradius',    type=int,   default='9',     help='[%(default)s] fitradius' )
 args = parser.parse_args()
 
-figsize = np.array(args.figsize.split(','),dtype=float)
-verbose = args.verbose
-boxsize = args.boxsize
+figsize   = np.array(args.figsize.split(','),dtype=float)
+verbose   = args.verbose
+fitradius = args.fitradius
+precaper  = args.precaper
+maxaper   = args.maxaper
 
-print("boxsize=",boxsize)
 
 if args.imagelist==[] :
     print("  usage:")
-    print("    1+click - get cutsor")
+    print("    1+click - get cursor")
     print("    2+click - center gauss")
     print("    3+click - center moffat")
-    print("    4+click - groving curve")
+    print("    4+click - growing curve")
     print("    r - reset (zoom home)")
     print("    p - pan (move center)")
     print("    s - save image")
@@ -455,8 +496,6 @@ for imagename in args.imagelist :
 
   if verbose>=2 :
     print('=============================================================================================================')
-  if verbose>=1 :
-    print("imagename  = ", imagename)
     
   imamat = np.transpose(pyfits.getdata(imagename))
   ima_med = np.median(imamat)
@@ -471,7 +510,7 @@ for imagename in args.imagelist :
     
   fig, ax = plt.subplots(figsize=(figsize[0],figsize[1]),facecolor='w')
   #cursor = Cursor(ax, useblit=False, color='g', linewidth=1 )
-  ia = Image_Analyzer(ax,boxsize,verbose,outfile)
+  ia = Image_Analyzer(ax,fitradius,precaper,maxaper,verbose,outfile)
   ia.load(imamat, cut0, cut1, imagename)
   ia.connect()
   plt.show()
