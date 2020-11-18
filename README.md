@@ -11,34 +11,21 @@
   > showfits.py -h
 
   usage: showfits.py [-h] [-figsize FIGSIZE] [-v VERBOSE] [-precaper PRECAPER]
-                     [-maxaper MAXAPER] [-box FITRADIUS]
+                     [-maxaper MAXAPER] [-fitradius FITRADIUS]
                      [imagelist [imagelist ...]]
   
   showfits.py (2020-11-18) by Arno Riffeser (arri@usm.lmu.de)
   
   positional arguments:
-    imagelist           image list
+    imagelist             image list
   
   optional arguments:
-    -h, --help          show this help message and exit
-    -figsize FIGSIZE    [8,6] figsize
-    -v VERBOSE          [2] verbose
-    -precaper PRECAPER  [80] precaper
-    -maxaper MAXAPER    [80] maxaper
-    -box FITRADIUS      [9] fitradius
-     usage: showfits.py [-h] [-figsize FIGSIZE] [-v VERBOSE] [-box BOXSIZE]
-                        [imagelist [imagelist ...]]
-     
-     showfits.py (2020-10-302) by Arno Riffeser (arri@usm.lmu.de)
-     
-     positional arguments:
-       imagelist         image list
-     
-     optional arguments:
-       -h, --help        show this help message and exit
-       -figsize FIGSIZE  [7,7] figsize
-       -v VERBOSE        [2] verbose
-       -box BOXSIZE      [9] boxsize
+    -h, --help            show this help message and exit
+    -figsize FIGSIZE      [8,6] figsize
+    -v VERBOSE            [2] verbose
+    -precaper PRECAPER    [80] precaper
+    -maxaper MAXAPER      [80] maxaper
+    -fitradius FITRADIUS  [7] fitradius
 ```
 
 - runtime commands

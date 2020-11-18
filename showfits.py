@@ -449,7 +449,7 @@ parser.add_argument('-figsize',   dest='figsize',    type=str,   default='8,6', 
 parser.add_argument('-v',         dest='verbose',    type=int,   default=2,       help='[%(default)s] verbose' )
 parser.add_argument('-precaper',  dest='precaper',   type=int,   default=80,      help='[%(default)s] precaper' )
 parser.add_argument('-maxaper',   dest='maxaper',    type=int,   default=80,      help='[%(default)s] maxaper' )
-parser.add_argument('-box',       dest='fitradius',    type=int,   default='9',     help='[%(default)s] fitradius' )
+parser.add_argument('-fitradius', dest='fitradius',  type=int,   default='7',     help='[%(default)s] fitradius' )
 args = parser.parse_args()
 
 figsize   = np.array(args.figsize.split(','),dtype=float)
