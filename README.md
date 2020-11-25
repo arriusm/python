@@ -37,6 +37,7 @@
     2+click - center gauss
     3+click - center moffat
     4+click - growing curve
+    0+click - masking
     r - reset (zoom home)
     p - pan (move center)
     s - save image

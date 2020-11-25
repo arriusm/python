@@ -99,30 +99,38 @@ class Image_Analyzer:
       x1 = xc+rad
       y0 = yc-rad
       y1 = yc+rad
-      sky = np.median(self.imamat)
+      sky = np.nanmedian(self.imamat)
       # print("sky=",sky)
       # DATA = self.imamat[x0-1:x1,y0-1:y1] - sky    # minus 1 in den indizes wegen image array -> python array
       DATA = self.imamat[x0-1:x1,y0-1:y1]    # minus 1 in den indizes wegen image array -> python array
-      bg = np.median(DATA)
-      max = np.max(DATA)
+      bg = np.nanmedian(DATA)
+      max = np.nanmax(DATA)
       amp = max-bg
       cen = DATA[rad,rad]
       # x, y = np.linspace(x0, x1, boxsize, dtype=float), np.linspace(y0, y1,boxsize, dtype=float)
       x = np.linspace(x0, x1, boxsize, dtype=float)
       y = np.linspace(y0, y1, boxsize, dtype=float)
       # print("x,y=",x,y)
-      X, Y = np.meshgrid(y,x)
+      XV, YV = np.meshgrid(y,x)
       # for ix in range(0,boxsize) :
       #     for iy in range(0,boxsize) :
       #         if DATA[ix,iy]==MD :
       #             xc = x[ix]
       #             yc = y[iy]
-      XY = np.vstack((X.ravel(), Y.ravel()))
-      Z = DATA.ravel()
+
+      X_in = XV.ravel()
+      Y_in = YV.ravel()
+      Z_in = DATA.ravel()
+      bad = np.where( np.isnan(Z_in) )
+      X = np.delete(X_in,bad)
+      Y = np.delete(Y_in,bad)
+      Z = np.delete(Z_in,bad)
+      XY = np.vstack((X,Y))
+      
       if not use_moffat : # gauss
         #astart = ( xc , yc , 2.1 , 2. , 45./180.*np.pi , amp )
         astart = ( xc , yc , 2.1 , 2. , 45./180.*np.pi , amp , bg )
-        res = least_squares(self.residuals_gauss, astart, method='lm', args=(XY,DATA.ravel()), verbose=0)
+        res = least_squares(self.residuals_gauss, astart, method='lm', args=(XY,Z), verbose=0)
         #afit = np.zeros(7)
         #afit[0:6] = res.x
         #afit[6] = 0.
@@ -153,7 +161,7 @@ class Image_Analyzer:
       else :
         #astart = ( xc , yc , 2.1 , 2. , 45./180.*np.pi , amp )
         astart = ( xc , yc , 2.1 , 2. , 45./180.*np.pi , amp , bg )
-        res = least_squares(self.residuals_moffat, astart, method='lm', args=(XY,DATA.ravel()), verbose=0) 
+        res = least_squares(self.residuals_moffat, astart, method='lm', args=(XY,Z), verbose=0) 
         #afit = np.zeros(7)
         #afit[0:6] = res.x
         #afit[6] = 0.
@@ -188,7 +196,7 @@ class Image_Analyzer:
   def load(self,imamat,cut0=0.,cut1=1000.,imagename='') :
       self.title = imagename
       self.imagename = imagename
-      self.imamat = imamat
+      self.imamat = imamat.astype(np.float32)
       (self.nx,self.ny) = np.shape(self.imamat)
       self.cut0 = cut0
       self.cut1 = cut1
@@ -202,6 +210,9 @@ class Image_Analyzer:
         print("#")
       self.extent = [0.5,self.nx+0.5,0.5,self.ny+0.5]
       self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
+      current_cmap = self.imshow.get_cmap()
+      current_cmap.set_bad(color='blue')
+
       #self.ax.set_xlim([1150,1170])
       #self.ax.set_ylim([870,890])
       self.imshow.figure.canvas.draw_idle()
@@ -222,7 +233,8 @@ class Image_Analyzer:
       
   def keypress(self, event):
       #print("event.key = ",event.key)
-      if (event.key=='z' or event.key=='Z' or event.key=='x' or event.key=='X' or event.key=='0') :              
+      #if (event.key=='z' or event.key=='Z' or event.key=='x' or event.key=='X' or event.key=='0') :              
+      if (event.key=='z' or event.key=='Z' or event.key=='x' or event.key=='X') :              
         self.dcut = self.cut1 - self.cut0
         if (event.key=='z') :
           self.cut0 = self.cut1 - self.dcut*self.cut_zoom        
@@ -232,10 +244,10 @@ class Image_Analyzer:
           self.cut1 = self.cut0 + self.dcut/self.cut_zoom
         if (event.key=='X') :
           self.cut1 = self.cut0 + self.dcut*self.cut_zoom        
-        if (event.key=='0') :
-          self.cut0 = 0.
+        #if (event.key=='0') :
+        #  self.cut0 = 0.
         print('cuts       {:10.1f} {:10.1f}'.format(self.cut0,self.cut1))
-        self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1)
+        #self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1)
         self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
         self.imshow.figure.canvas.draw_idle()
       if event.key==' ' :
@@ -248,8 +260,8 @@ class Image_Analyzer:
         xn, yn = np.linspace(0.5,self.nx+0.5, self.nx, dtype=float), np.linspace(0.5,self.ny+0.5, self.ny, dtype=float)
         Xn, Yn = np.meshgrid(xn,yn)
         Z = np.transpose(self.imamat)
-        ima_min = np.min(self.imamat)
-        ima_max = np.max(self.imamat)
+        ima_min = np.nanmin(self.imamat)
+        ima_max = np.nanmax(self.imamat)
         ima_del = ima_max - ima_min
         levels = np.linspace(ima_min+0.05*ima_del, ima_max-0.05*ima_del, 20)
         idc = self.ax.contour(Xn, Yn, Z, levels, colors='g')
@@ -262,6 +274,32 @@ class Image_Analyzer:
       #           ('double' if event.dblclick else 'single', event.button, event.key,
       #            event.x, event.y, event.xdata, event.ydata))  
 
+      if (event.button==1 and event.key=='0')  :
+        self.xc = int(event.xdata+0.5)
+        self.yc = int(event.ydata+0.5)
+        if self.verbose>=2 :
+          print('{:<10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'oldvalue', 'value'))
+        if self.verbose>=1 :         
+          print('{:10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}'.format('mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
+        self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'oldvalue', 'value'))
+        self.outfile.write('{:<20} {:<10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}\n'.format(self.imagename,'mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
+        mx0 = self.xc-5
+        mx1 = self.xc+5
+        my0 = self.yc-5
+        my1 = self.yc+5
+        r2max = 5**2+1
+        #self.imamat[mx0-1:mx1,my0-1:my1] = np.nan
+        for ix in range(mx0,mx1+1) :
+          for iy in range(my0,my1+1) :
+              r2 = (ix-self.xc)**2+(iy-self.yc)**2
+              if r2<=r2max :
+                self.imamat[ix-1,iy-1] = np.nan 
+        #print('imamat',self.imamat[mx0-1:mx1,my0-1:my1])
+        #if self.verbose>=1 :         
+        #  print('{:10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}'.format('mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
+        self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
+        self.imshow.figure.canvas.draw_idle()
+      # if (event.button==1 and event.key=='2') or event.dblclick :
       if (event.button==1 and event.key=='1')  :
         self.xc = int(event.xdata+0.5)
         self.yc = int(event.ydata+0.5)
@@ -289,12 +327,16 @@ class Image_Analyzer:
         ####### growing curve
         prec = self.precaper
         maxaper = self.maxaper
-        # self.sky0 = np.average(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
-        # self.sky0 = np.median(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
-        c, low, upp = sigmaclip(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50],3.,2.)
-        self.sky0 = np.average(c)
+        # self.sky0 = np.nanmean(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
+        # self.sky0 = np.nanmedian(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
+        #c, low, upp = sigmaclip(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50],3.,2.,nan_policy=‘omit’)
+        #cenfunc='np.nanmean',stdfunc='np.nanstd)')
+        #c, low, upp = sigmaclip(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50],3.,2.)
+        #self.sky0 = np.average(c)
+        #self.sky0 = np.nanmean(c)
+        self.sky0 = np.nanmedian(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
         #print("c, low, upp  = ",np.average(c), low, upp )
-
+        #print(" self.sky0=", self.sky0)
         self.r = np.linspace(1.,maxaper,prec)
         #print(self.r)
         aper2 = self.r**2+1.
@@ -304,20 +346,30 @@ class Image_Analyzer:
         for i in range(prec) :
           s=0.
           n=0
+          #print('{:10} {:10.0f} {:10.0f} {}'.format('test mask',ixc,iyc,self.imamat[ixc-1,iyc-1]))
           for ix in range(ixc-maxaper-1,ixc+maxaper+1) :
             for iy in range(iyc-maxaper-1,iyc+maxaper+1) :
               r2 = (ix-self.xc)**2+(iy-self.yc)**2
-              # if r2<=aper2[i] :
+              # if r2<=aper2[i] :              
               if r2<aper2[i] :
-                s += self.imamat[ix-1,iy-1] - self.sky0
-                n += 1
+                value = self.imamat[ix-1,iy-1]
+                #print('value=',value)
+                if not np.isnan(value) :
+                  #print('value=',value)                  
+                  s += value - self.sky0
+                  n += 1
+                #else :
+                #  print('nan=',value)
           self.grow[i] = s
           self.area[i] = n
           self.growsky[i] = s+n*self.sky0
-        self.maxgrow = np.max(self.grow)
-        grow_min = np.min(self.grow)
-        grow_max = np.max(self.grow)
+        #print("self.grow=",self.grow)
+        self.maxgrow = np.nanmax(self.grow)
+        grow_min = np.nanmin(self.grow)
+        grow_max = np.nanmax(self.grow)
         grow_del = grow_max - grow_min
+        #print("grow_min=",grow_min)
+        #print("grow_max=",grow_max)
         self.ylim0 = grow_min-0.1*grow_del
         self.ylim1 = grow_max+0.1*grow_del
 
@@ -406,8 +458,8 @@ class Image_Analyzer:
         self.pointc.set_ydata(new_grow)
         self.lineh.set_xdata([self.r[0],self.r[-1]])
         self.lineh.set_ydata([a0,a0])
-        new_grow_min = np.min(new_grow)
-        new_grow_max = np.max(new_grow)
+        new_grow_min = np.nanmin(new_grow)
+        new_grow_max = np.nanmax(new_grow)
         new_grow_del = new_grow_max - new_grow_min
         # replot
         self.ylim0 = new_grow_min-0.1*new_grow_del
@@ -498,10 +550,10 @@ for imagename in args.imagelist :
     print('=============================================================================================================')
     
   imamat = np.transpose(pyfits.getdata(imagename))
-  ima_med = np.median(imamat)
-  ima_std = np.std(imamat)
-  ima_min = np.min(imamat)
-  ima_max = np.max(imamat)
+  ima_med = np.nanmedian(imamat)
+  ima_std = np.nanstd(imamat)
+  ima_min = np.nanmin(imamat)
+  ima_max = np.nanmax(imamat)
   ima_del = ima_max - ima_min
   #cut0 = ima_min - 0.1 * ima_del
   #cut1 = ima_max - 0.1 * ima_del
