@@ -38,15 +38,19 @@
     3+click - center moffat
     4+click - growing curve
     0+click - masking
-    r - reset (zoom home)
+	z - decrease lower cut
+	Z - increase lower cut
+	x - decrease higher cut
+	X - increase higher cut
     p - pan (move center)
-    s - save image
+    r - reset (zoom home)
     c - zoom back
     v - zoom forward
     left  - zoom back
     right - zoom forward
     k - x axis log
     l - y axis log
+    s - save image
     q - quit
 ```
 
