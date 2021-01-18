@@ -2,7 +2,7 @@
 #/opt/anaconda3.7/bin/python
 #
 
-# (2020-11-18) by Arno Riffeser (arri@usm.lmu.de)
+# (2021-01-18) by Arno Riffeser (arri@usm.lmu.de)
 
 
 from math import *
@@ -19,6 +19,7 @@ import argparse
 class Image_Analyzer:
 
   def __init__(self, ax, fitradius=7, precaper=80, maxaper=80, verbose=2, outfile=None):
+      self.verbose = verbose
       self.ax = ax
       self.ax2 = None
       self.cut_zoom = 1.2
@@ -36,7 +37,6 @@ class Image_Analyzer:
       self.fitradius = fitradius
       self.precaper = precaper
       self.maxaper = maxaper
-      self.verbose = verbose
       self.r = None
       self.grow = None
       self.growsky = None
@@ -53,7 +53,11 @@ class Image_Analyzer:
       self.imamat = None
       self.ylim0 = 0.
       self.ylim1 = 0.
+      self.imagelist = []
+      self.imagelistend = 0
+      self.imagenr = 0
 
+      
   def gauss(self, xx, yy, xx0, yy0, sigx, sigy, phi, A, C=0. ):
       cw=np.cos(phi);
       sw=np.sin(phi);
@@ -158,6 +162,7 @@ class Image_Analyzer:
         if verbose>=0 :
           self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
           self.outfile.write('{:<20} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,'gauss',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        self.ax.plot(afit[0],afit[1],marker="x",c='g',ms=10)
       else :
         #astart = ( xc , yc , 2.1 , 2. , 45./180.*np.pi , amp )
         astart = ( xc , yc , 2.1 , 2. , 45./180.*np.pi , amp , bg )
@@ -191,24 +196,72 @@ class Image_Analyzer:
         if verbose>=0 :
           self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
           self.outfile.write('{:<20} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,'moffat',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        self.ax.plot(afit[0],afit[1],marker="x",c='g',ms=10)
       return afit[0],afit[1]
 
-  def load(self,imamat,cut0=0.,cut1=1000.,imagename='') :
-      self.title = imagename
-      self.imagename = imagename
-      self.imamat = imamat.astype(np.float32)
+
+  
+  # def loadmat(self,imamat,cut0=0.,cut1=1000.,imagename='') :
+  #     self.title = imagename
+  #     self.imagename = imagename
+  #     self.imamat = imamat.astype(np.float32)
+  #     (self.nx,self.ny) = np.shape(self.imamat)
+  #     self.cut0 = cut0
+  #     self.cut1 = cut1
+  #     self.dcut = cut1 - cut0
+  #     if verbose>=1 :
+  #       print("imagename     ", imagename)
+  #     if self.verbose>=2 :
+  #       print('image(nx,ny)  {:10.0f} {:10.0f}'.format(self.nx,self.ny))
+  #       print('cuts          {:10.1f} {:10.1f}'.format(self.cut0,self.cut1))
+  #     if verbose>=1 :
+  #       print("#")
+  #     self.extent = [0.5,self.nx+0.5,0.5,self.ny+0.5]
+  #     self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
+  #     current_cmap = self.imshow.get_cmap()
+  #     current_cmap.set_bad(color='blue')
+  # 
+  #     #self.ax.set_xlim([1150,1170])
+  #     #self.ax.set_ylim([870,890])
+  #     self.imshow.figure.canvas.draw_idle()
+
+  def storelist(self,imagelist) :
+      self.imagelist = imagelist
+      self.imagelistend = len(self.imagelist)
+      print('nr of images = ',self.imagelistend)
+
+      
+  def load(self,cut0=None,cut1=None) :
+      if self.verbose>=2 :
+          print('=============================================================================================================')
+      self.imagename = self.imagelist[self.imagenr]
+      self.title = self.imagename
+      self.imamat = np.transpose(pyfits.getdata(self.imagename))
+      ima_med = np.nanmedian(self.imamat)
+      ima_std = np.nanstd(self.imamat)
+      ima_min = np.nanmin(self.imamat)
+      ima_max = np.nanmax(self.imamat)
+      ima_del = ima_max - ima_min
+      if (cut0==None) :
+        #cut0 = ima_min - 0.1 * ima_del
+        cut0 = ima_med - 3. * ima_std
+      if (cut1==None) :
+        #cut1 = ima_max - 0.1 * ima_del
+        cut1 = ima_med + 5. * ima_std
       (self.nx,self.ny) = np.shape(self.imamat)
       self.cut0 = cut0
       self.cut1 = cut1
       self.dcut = cut1 - cut0
       if verbose>=1 :
-        print("imagename     ", imagename)
+        print("nr            ", self.imagenr+1," of ",self.imagelistend)
+        print("imagename     ", self.imagename)
       if self.verbose>=2 :
         print('image(nx,ny)  {:10.0f} {:10.0f}'.format(self.nx,self.ny))
         print('cuts          {:10.1f} {:10.1f}'.format(self.cut0,self.cut1))
       if verbose>=1 :
         print("#")
       self.extent = [0.5,self.nx+0.5,0.5,self.ny+0.5]
+      self.ax.clear()
       self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
       current_cmap = self.imshow.get_cmap()
       current_cmap.set_bad(color='blue')
@@ -217,6 +270,7 @@ class Image_Analyzer:
       #self.ax.set_ylim([870,890])
       self.imshow.figure.canvas.draw_idle()
 
+      
   def connect(self):
       self.id1 = self.imshow.figure.canvas.mpl_connect('button_press_event',self.onclick)
       self.id2 = self.imshow.figure.canvas.mpl_connect('key_press_event',self.keypress)
@@ -234,15 +288,15 @@ class Image_Analyzer:
   def keypress(self, event):
       #print("event.key = ",event.key)
       #if (event.key=='z' or event.key=='Z' or event.key=='x' or event.key=='X' or event.key=='0') :              
-      if (event.key=='z' or event.key=='Z' or event.key=='x' or event.key=='X') :              
+      if (event.key=='z' or event.key=='x' or event.key=='d' or event.key=='f') :              
         self.dcut = self.cut1 - self.cut0
         if (event.key=='z') :
           self.cut0 = self.cut1 - self.dcut*self.cut_zoom        
-        if (event.key=='Z') :
-          self.cut0 = self.cut1 - self.dcut/self.cut_zoom        
         if (event.key=='x') :
+          self.cut0 = self.cut1 - self.dcut/self.cut_zoom        
+        if (event.key=='d') :
           self.cut1 = self.cut0 + self.dcut/self.cut_zoom
-        if (event.key=='X') :
+        if (event.key=='f') :
           self.cut1 = self.cut0 + self.dcut*self.cut_zoom        
         #if (event.key=='0') :
         #  self.cut0 = 0.
@@ -270,10 +324,27 @@ class Image_Analyzer:
         
   def onclick(self, event):
       # print(event.button)
-      # print('%s click: button=%d, key=%s, x=%d, y=%d, xdata=%f, ydata=%f' %
-      #           ('double' if event.dblclick else 'single', event.button, event.key,
-      #            event.x, event.y, event.xdata, event.ydata))  
+      if (self.verbose>2) :
+        print('%s click: button=%d, key=%s, x=%d, y=%d, xdata=%f, ydata=%f' %
+                ('double' if event.dblclick else 'single', event.button, event.key,event.x, event.y, event.xdata, event.ydata))
+        
+      if (event.button==3)  :
+        # print('right mouse')
+        if (self.imagenr<self.imagelistend-1) :
+          self.imagenr = self.imagenr + 1
+        else :
+          self.imagenr = 0          
+        self.load()
 
+      if (event.button==2)  :
+        # print('left mouse')
+        if (self.imagenr>0) :
+          self.imagenr = self.imagenr - 1
+        else :
+          self.imagenr = self.imagelistend - 1 
+        self.load()
+
+        
       if (event.button==1 and event.key=='0')  :
         self.xc = int(event.xdata+0.5)
         self.yc = int(event.ydata+0.5)
@@ -309,6 +380,8 @@ class Image_Analyzer:
           print('{:10} {:10.0f} {:10.0f} {:10.2f}'.format('pixel',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1]))
         self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'value'))
         self.outfile.write('{:<20} {:<10} {:10.0f} {:10.0f} {:10.2f}\n'.format(self.imagename,'pixel',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1]))
+        self.ax.plot(self.xc,self.yc,marker="+",c='b',ms=10)
+
       # if (event.button==1 and event.key=='2') or event.dblclick :
       if (event.button==1 and event.key=='2') :
         pos = [event.xdata, event.ydata]
@@ -495,7 +568,7 @@ class Image_Analyzer:
         
 ########################### MAIN
 
-parser = argparse.ArgumentParser(description='showfits.py (2020-11-18) by Arno Riffeser (arri@usm.lmu.de)\n')
+parser = argparse.ArgumentParser(description='showfits.py (2021-01-18) by Arno Riffeser (arri@usm.lmu.de)\n')
 parser.add_argument(              'imagelist',       nargs='*',                   help='image list')
 parser.add_argument('-figsize',   dest='figsize',    type=str,   default='8,6',   help='[%(default)s] figsize' )
 parser.add_argument('-v',         dest='verbose',    type=int,   default=2,       help='[%(default)s] verbose' )
@@ -519,9 +592,9 @@ if args.imagelist==[] :
     print("    4+click - growing curve")
     print("    0+click - masking")
     print("    z - decrease lower cut")
-    print("    Z - increase lower cut")
-    print("    x - decrease higher cut")
-    print("    X - increase higher cut")
+    print("    x - increase lower cut")
+    print("    d - decrease higher cut")
+    print("    f - increase higher cut")
     print("    p - pan (move center)")
     print("    r - reset (zoom home)")
     print("    c - zoom back")
@@ -549,29 +622,17 @@ outfile  = open( 'showfits.tab' , 'w' )
 
 show=True
 print(args.imagelist)
-for imagename in args.imagelist :
+imagelist = args.imagelist
 
-  if verbose>=2 :
-    print('=============================================================================================================')
-    
-  imamat = np.transpose(pyfits.getdata(imagename))
-  ima_med = np.nanmedian(imamat)
-  ima_std = np.nanstd(imamat)
-  ima_min = np.nanmin(imamat)
-  ima_max = np.nanmax(imamat)
-  ima_del = ima_max - ima_min
-  #cut0 = ima_min - 0.1 * ima_del
-  #cut1 = ima_max - 0.1 * ima_del
-  cut0 = ima_med - 3. * ima_std
-  cut1 = ima_med + 5. * ima_std
-    
-  fig, ax = plt.subplots(figsize=(figsize[0],figsize[1]),facecolor='w')
-  #cursor = Cursor(ax, useblit=False, color='g', linewidth=1 )
-  ia = Image_Analyzer(ax,fitradius,precaper,maxaper,verbose,outfile)
-  ia.load(imamat, cut0, cut1, imagename)
-  ia.connect()
-  plt.show()
-  ia.disconnect()
+
+fig, ax = plt.subplots(figsize=(figsize[0],figsize[1]),facecolor='w')
+cursor = Cursor(ax, useblit=False, color='g', linewidth=1 )
+ia = Image_Analyzer(ax,fitradius,precaper,maxaper,verbose,outfile)
+ia.storelist(imagelist)
+ia.load()
+ia.connect()
+plt.show()
+ia.disconnect()
 
 outfile.close()
   
