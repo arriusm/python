@@ -33,8 +33,8 @@ filter   = ['u', 'g', 'r', 'i', 'z']
 
 ############################ primary inputs 
 
-# tel='WST 2m'
-tel='WST 40cm'
+tel='WST 2m'
+# tel='WST 40cm'
 # tel='WST 40cm defocussed'
 # tel='WST 2m defocussed'
 
@@ -45,7 +45,8 @@ mag_in  = []
 # mag_in  = np.array([ 24.878, 25.460, 24.998, 24.426, 23.536]) #  object AB [AB mag]
 # mag_in  = 20. * np.ones(5)  #  object AB [AB mag]
 # http://mips.as.arizona.edu/~cnaw/sun.html
-mag_in  = (8.25 - (-26.76 + np.array([25.18,26.47,26.93,27.05,27.07])))  * np.ones(5) 
+# mag_in  = (8.25 - (-26.76 + np.array([25.18,26.47,26.93,27.05,27.07])))  * np.ones(5) 
+mag_in  = 10.72  * np.ones(5) 
 
 
 texp_in = []

@@ -1,5 +1,11 @@
 # usmpy
 
+## git
+
+git add showfits.py 
+git commit -m "changes..."
+git push origin
+
 
 ## showfits
 
