@@ -1,12 +1,14 @@
 #!/Users/arri/miniconda3/bin/python
+## !/afs/ipp/.cs/anaconda/amd64_generic/3/2019.10/bin/python
+## !/afs/ipp-garching.mpg.de/home/a/arri/miniconda3/bin/python
 ## !/opt/miniconda3/bin/python
 ## !/opt/anaconda3.7/bin/python
 
-# (2021-01-20) by Arno Riffeser (arri@usm.lmu.de)
+# (2021-01-27) by Arno Riffeser (arri@usm.lmu.de)
 
-import matplotlib
-#matplotlib.use('TkAgg')
-matplotlib.use('MacOSX')
+import matplotlib as mpl
+# mpl.use('TkAgg')
+mpl.use('MacOSX')
 
 from math import *
 import numpy as np
@@ -18,10 +20,12 @@ from   scipy.optimize     import leastsq
 from   scipy.stats        import sigmaclip
 from   astropy.io         import fits as pyfits
 import argparse
+import copy
+
 
 class Image_Analyzer:
 
-  def __init__(self, ax, fitradius=7, precaper=80, maxaper=80, verbose=2, outfile=None):
+  def __init__(self, ax, fitradius=7, precaper=80, maxaper=80, zoom=0, verbose=2, divvy=False, outfile=None):
       self.verbose = verbose
       self.ax = ax
       self.ax2 = None
@@ -59,6 +63,9 @@ class Image_Analyzer:
       self.imagelist = []
       self.imagelistend = 0
       self.imagenr = 0
+      self.cmap = None
+      self.divvy = divvy
+      self.zoom = zoom
 
 
 
@@ -69,8 +76,11 @@ class Image_Analyzer:
           print('{:<10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'value'))
       if self.verbose>=1 :         
           print('{:10} {:10.0f} {:10.0f} {:10.2f}'.format('pixel',xc,yc,self.imamat[xc-1,yc-1]))
-      self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'value'))
-      self.outfile.write('{:<20} {:<10} {:10.0f} {:10.0f} {:10.2f}\n'.format(self.imagename,'pixel',xc,yc,self.imamat[xc-1,yc-1]))
+      if self.divvy :
+        self.outfile.write('{:<30} {:10.0f} {:10.0f} {:10.2f}\n'.format(self.imagename,xc,yc,self.imamat[xc-1,yc-1]))
+      else :
+        self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'value'))
+        self.outfile.write('{:<30} {:<10} {:10.0f} {:10.0f} {:10.2f}\n'.format(self.imagename,'pixel',xc,yc,self.imamat[xc-1,yc-1]))
       self.ax.plot(xc,yc,marker="2",c='k',ms=10)
       return xc,yc
 
@@ -175,9 +185,12 @@ class Image_Analyzer:
           print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
         if verbose>=1 :
           print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format('gauss',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
-        if verbose>=0 :
-          self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
-          self.outfile.write('{:<20} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,'gauss',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        if self.divvy :
+          self.outfile.write('{:<30} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))            
+        else :
+          if verbose>=0 :
+            self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
+            self.outfile.write('{:<30} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,'gauss',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
         self.ax.plot(afit[0],afit[1],marker="+",c='g',ms=10)
         
       else :
@@ -210,9 +223,12 @@ class Image_Analyzer:
           print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
         if verbose>=1 :
           print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format('moffat',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
-        if verbose>=0 :
-          self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
-          self.outfile.write('{:<20} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,'moffat',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        if self.divvy :
+            self.outfile.write('{:<30} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        else :
+          if verbose>=0 :
+            self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
+            self.outfile.write('{:<30} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,'moffat',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
         self.ax.plot(afit[0],afit[1],marker="x",c='b',ms=10)
       return afit[0],afit[1]
 
@@ -298,17 +314,19 @@ class Image_Analyzer:
           print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f} {:10.1f}'.format('grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1,errtotall))
         if (event.dblclick) :
           print('---------------------------------------------------------------------------------------')
-          self.outfile.write('{:<20} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f} {:10.1f}\n'.format(self.imagename,'grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1,errtotall))
-
-  #def growing_curve_close(self, event) :
+          if self.divvy :
+            self.outfile.write('{:<30} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f} {:10.1f}\n'.format(self.imagename,self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1,errtotall))
+          else :
+            self.outfile.write('{:<30} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f} {:10.1f}\n'.format(self.imagename,'grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1,errtotall))
+      #def growing_curve_close(self, event) :
       #print('---------------------------------------------------------------------------------------')
       #if self.rad0 < self.rad1 :
       #  if self.verbose>=2 :
       #    print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux', 'sky', 'r0', 'r1' ))
       #  if self.verbose>=1 :         
       #    print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f}'.format('grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1))
-      #  self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux', 'sky', 'r0', 'r1' ))
-      #  self.outfile.write('{:<20} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f}\n'.format(self.imagename,'grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1))
+      #  self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux', 'sky', 'r0', 'r1' ))
+      #  self.outfile.write('{:<30} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.1f} {:10.1f}\n'.format(self.imagename,'grow.curve',self.xc,self.yc,self.totflux,self.sky,self.rad0,self.rad1))
 
 
   def storelist(self,imagelist) :
@@ -334,6 +352,7 @@ class Image_Analyzer:
       if (cut1==None) :
         #cut1 = ima_max - 0.1 * ima_del
         cut1 = ima_med + 5. * ima_std
+      print('np.shape(self.imamat)=',np.shape(self.imamat))
       (self.nx,self.ny) = np.shape(self.imamat)
       self.cut0 = cut0
       self.cut1 = cut1
@@ -348,13 +367,29 @@ class Image_Analyzer:
         print("#")
       self.extent = [0.5,self.nx+0.5,0.5,self.ny+0.5]
       self.ax.clear()
-      self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
+      self.cmap = copy.copy(mpl.cm.get_cmap("gist_heat"))
+      self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
       self.imshow.figure.canvas.set_window_title(self.title)
       current_cmap = self.imshow.get_cmap()
       current_cmap.set_bad(color='blue')
-
-      #self.ax.set_xlim([1150,1170])
-      #self.ax.set_ylim([870,890])
+      if self.zoom!=0 :
+        self.ax.xaxis.zoom(self.zoom) 
+        self.ax.yaxis.zoom(self.zoom)
+      # if self.zoom!=0 :
+      #   if self.zoom==4 :
+      #     dx = 100
+      #     dy = 100
+      #   if self.zoom==2 :
+      #     dx = 200
+      #     dy = 200
+      #   if self.zoom==1 :
+      #     dx = 400
+      #     dy = 400
+      #   if self.zoom==0.5 :
+      #     dx = 800
+      #     dy = 800
+      #   self.ax.set_xlim([self.nx/2-dx,self.nx/2+dx])
+      #   self.ax.set_ylim([self.ny/2-dy,self.ny/2+dy])
       self.imshow.figure.canvas.draw_idle()
 
       
@@ -388,13 +423,14 @@ class Image_Analyzer:
         #if (event.key=='0') :
         #  self.cut0 = 0.
         print('cuts       {:10.1f} {:10.1f}'.format(self.cut0,self.cut1))
-        #self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1)
-        self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
+        #self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap=self.cmap, vmin=self.cut0, vmax=self.cut1)
+        self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
         self.imshow.figure.canvas.draw_idle()
       if event.key==' ' :
         if verbose>=1 :
           print('---------------------------------------------------------------------------------------------------------')
-          self.outfile.write('---------------------------------------------------------------------------------------------------------\n')
+          if not(self.divvy) :
+            self.outfile.write('---------------------------------------------------------------------------------------------------------\n')
 
         
       if event.key=='o' :
@@ -438,8 +474,11 @@ class Image_Analyzer:
           print('{:<10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'oldvalue', 'value'))
         if self.verbose>=1 :         
           print('{:10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}'.format('mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
-        self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'oldvalue', 'value'))
-        self.outfile.write('{:<20} {:<10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}\n'.format(self.imagename,'mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
+        if self.divvy :
+          self.outfile.write('{:<30} {:10.0f} {:10.0f} {:10.2f} {:10.2f}\n'.format(self.imagename,self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
+        else :
+          self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'oldvalue', 'value'))
+          self.outfile.write('{:<30} {:<10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}\n'.format(self.imagename,'mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
         mx0 = self.xc-5
         mx1 = self.xc+5
         my0 = self.yc-5
@@ -454,7 +493,7 @@ class Image_Analyzer:
         #print('imamat',self.imamat[mx0-1:mx1,my0-1:my1])
         #if self.verbose>=1 :         
         #  print('{:10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}'.format('mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
-        self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap='gist_heat', vmin=self.cut0, vmax=self.cut1, extent=self.extent)
+        self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
         self.imshow.figure.canvas.draw_idle()
         #self.load()
         
@@ -546,7 +585,8 @@ class Image_Analyzer:
         cid4 = fig2.canvas.mpl_connect('key_press_event',self.keypress)
         if self.verbose>=2 :
           print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
-        self.outfile.write('{:<20} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
+        if not(self.divvy) :
+          self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
 
         fig2.show()
 
@@ -554,13 +594,15 @@ class Image_Analyzer:
         
 ########################### MAIN
 
-parser = argparse.ArgumentParser(description='showfits.py (2021-01-20) by Arno Riffeser (arri@usm.lmu.de)\n')
+parser = argparse.ArgumentParser(description='showfits.py (2021-01-27) by Arno Riffeser (arri@usm.lmu.de)\n')
 parser.add_argument(              'imagelist',       nargs='*',                   help='image list')
 parser.add_argument('-figsize',   dest='figsize',    type=str,   default='9,9',   help='[%(default)s] figsize' )
 parser.add_argument('-v',         dest='verbose',    type=int,   default=2,       help='[%(default)s] verbose' )
 parser.add_argument('-precaper',  dest='precaper',   type=int,   default=80,      help='[%(default)s] precaper' )
 parser.add_argument('-maxaper',   dest='maxaper',    type=int,   default=80,      help='[%(default)s] maxaper' )
 parser.add_argument('-fitradius', dest='fitradius',  type=int,   default='7',     help='[%(default)s] fitradius' )
+parser.add_argument('-divvy',     dest='divvy',      action='store_true',         help='[%(default)s] divvy' )
+parser.add_argument('-zoom',       dest='zoom',       type=int,   default='0',     help='[%(default)s] zoom' )
 args = parser.parse_args()
 
 figsize   = np.array(args.figsize.split(','),dtype=float)
@@ -571,7 +613,7 @@ maxaper   = args.maxaper
 
 
 if args.imagelist==[] :
-    print("  usage:")
+    print("  usage in plot window:")
     print("    1+click - get cursor")
     print("    2+click - center gauss")
     print("    3+click - center moffat")
@@ -594,6 +636,8 @@ if args.imagelist==[] :
     print("    q - quit")
     exit(-1)
 
+
+
     
 # https://matplotlib.org/3.3.0/users/interactive_guide.html
 
@@ -603,9 +647,9 @@ print(imagelist)
 
 outfile  = open( 'showfits.tab' , 'w' )
 
-fig, ax = plt.subplots(figsize=(figsize[0],figsize[1]),facecolor='w')
+fig, ax = plt.subplots(figsize=(figsize[0],figsize[1]),facecolor='w',dpi=100)
 cursor = Cursor(ax, useblit=False, color='g', linewidth=1 )
-ia = Image_Analyzer(ax,fitradius,precaper,maxaper,verbose,outfile)
+ia = Image_Analyzer(ax,fitradius,precaper,maxaper,args.zoom,verbose,args.divvy,outfile)
 ia.storelist(imagelist)
 ia.load()
 ia.connect()
