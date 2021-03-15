@@ -1,20 +1,14 @@
 #!/Users/arri/miniconda3/bin/python
-## !/Users/arri/miniconda3/bin/python
 ## !/opt/miniconda3/bin/python
-## !/afs/ipp/.cs/anaconda/amd64_generic/3/2019.10/bin/python
-## !/afs/ipp-garching.mpg.de/home/a/arri/miniconda3/bin/python
 ## !/opt/miniconda3/bin/python
-## !/opt/anaconda3.7/bin/python
 
-
-# (2021-03-13) copyright by Arno Riffeser (arri@usm.lmu.de)
+# (2021-03-15) copyright by Arno Riffeser (arri@usm.lmu.de)
 
 
 import matplotlib as mpl
-#mpl.use('TkAgg')   # ATTENTION: TkAgg on MacOSX: button_press_event not working correctly!!
+#mpl.use('TkAgg')   # ATTENTION: TkAgg on MacOSX: button_press_event not working correctly
 mpl.use('MacOSX')
 
-from math import *
 import numpy as np
 import argparse
 import copy
@@ -66,6 +60,7 @@ class Image_Analyzer:
     self.imagename = ''
     self.outfile = outfile
     self.imamat = None
+    self.imamat_plot = None
     self.ylim0 = 0.
     self.ylim1 = 0.
     self.imagelist = []
@@ -103,15 +98,17 @@ class Image_Analyzer:
     
       
   def start(self, fig) :
-    self.ax      = fig.add_axes([0.07, 0.07, 0.91, 0.91])
     self.axprev  = fig.add_axes([0.01, 0.01, 0.10, 0.03])
+    # self.ax muss als 2. stehen: button_press_event BUG bei click+'2' !!
+    self.ax      = fig.add_axes([0.07, 0.07, 0.91, 0.91]) 
     self.axnext  = fig.add_axes([0.12, 0.01, 0.10, 0.03])
     self.axcut0n = fig.add_axes([0.23, 0.01, 0.06, 0.03])
     self.axcut0p = fig.add_axes([0.30, 0.01, 0.06, 0.03])
     self.axcut1n = fig.add_axes([0.37, 0.01, 0.06, 0.03])
     self.axcut1p = fig.add_axes([0.44, 0.01, 0.06, 0.03])
     self.axcmap  = fig.add_axes([0.51, 0.01, 0.06, 0.03])
-  
+
+    
   def connect(self):
     #print(self.imshow)
     self.id1 = self.imshow.figure.canvas.mpl_connect('button_press_event',self.onclick)
@@ -138,10 +135,10 @@ class Image_Analyzer:
 
   def disconnect(self):
     self.imshow.figure.canvas.mpl_disconnect(self.id1)
-    #self.imshow.figure.canvas.mpl_disconnect(self.id2)
-    #self.imshow.figure.canvas.mpl_disconnect(self.id3)
-    #self.ax.callbacks.disconnect(self.idxlim)
-    #self.ax.callbacks.disconnect(self.idylim)
+    self.imshow.figure.canvas.mpl_disconnect(self.id2)
+    self.imshow.figure.canvas.mpl_disconnect(self.id3)
+    self.ax.callbacks.disconnect(self.idxlim)
+    self.ax.callbacks.disconnect(self.idylim)
 
       
   def close(self, event) :
@@ -152,7 +149,7 @@ class Image_Analyzer:
     self.dcut = self.cut1 - self.cut0
     self.cut0 = self.cut1 - self.dcut*self.cut_zoom     
     print('cuts           {:<10.1f} {:<10.1f}'.format(self.cut0,self.cut1))
-    self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower',
+    self.imshow = self.ax.imshow( self.imamat_plot, origin='lower',
                                   cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
     self.imshow.figure.canvas.draw_idle()
 
@@ -160,7 +157,7 @@ class Image_Analyzer:
     self.dcut = self.cut1 - self.cut0
     self.cut0 = self.cut1 - self.dcut/self.cut_zoom 
     print('cuts           {:<10.1f} {:<10.1f}'.format(self.cut0,self.cut1))
-    self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower',
+    self.imshow = self.ax.imshow( self.imamat_plot, origin='lower',
                                   cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
     self.imshow.figure.canvas.draw_idle()
 
@@ -168,7 +165,7 @@ class Image_Analyzer:
     self.dcut = self.cut1 - self.cut0
     self.cut1 = self.cut0 + self.dcut/self.cut_zoom   
     print('cuts           {:<10.1f} {:<10.1f}'.format(self.cut0,self.cut1))
-    self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower',
+    self.imshow = self.ax.imshow( self.imamat_plot, origin='lower',
                                   cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
     self.imshow.figure.canvas.draw_idle()
 
@@ -176,7 +173,7 @@ class Image_Analyzer:
     self.dcut = self.cut1 - self.cut0
     self.cut1 = self.cut0 + self.dcut*self.cut_zoom 
     print('cuts           {:<10.1f} {:<10.1f}'.format(self.cut0,self.cut1))
-    self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower',
+    self.imshow = self.ax.imshow( self.imamat_plot, origin='lower',
                                   cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
     self.imshow.figure.canvas.draw_idle()
 
@@ -187,7 +184,7 @@ class Image_Analyzer:
       self.cmap_nr = 0
     print('cmap           {:<10} {:<}'.format(self.cmap_nr,self.cmap_all[self.cmap_nr]))
     self.cmap = copy.copy(mpl.cm.get_cmap(self.cmap_all[self.cmap_nr]))
-    self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower',
+    self.imshow = self.ax.imshow( self.imamat_plot, origin='lower',
                                   cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
     self.imshow.figure.canvas.draw_idle()    
       
@@ -293,41 +290,45 @@ class Image_Analyzer:
       #afit[0:6] = res.x
       #afit[6] = 0.
       afit = res.x
-      # double ert = -( a(3) * tx * tx + a(4) * ty * ty );  # usmlib.h
-      # fwhm0  = 2. * sqrt( M_LN2 / a(3) );                 # starphot.cpp
-      # refa(0)  =  refa(2)*M_PI/sqrt(refa(3)*refa(4));     # starphot.cpp
-      fwhmx = abs(afit[2]) * np.sqrt(8.*log(2.))
-      fwhmy = abs(afit[3]) * np.sqrt(8.*log(2.))
-      fwhm = np.sqrt(fwhmx*fwhmy)
-      a3 = 1./(2.*afit[2]**2)
-      a4 = 1./(2.*afit[3]**2)
-      totflux = afit[5] * np.pi / np.sqrt( a3 * a4);
-      if verbose>=5 :
-        xn, yn = np.linspace(-30., 30., 61, dtype=float), np.linspace(-30., 30., 61, dtype=float)
-        Xn, Yn = np.meshgrid(yn,xn)
-        yyn = Xn.ravel()
-        xxn = Yn.ravel()
-        xx0, yy0, sigx, sigy, phi, A, C = afit
-        print("numerical totflux = ",np.sum(self.gauss(xxn, yyn, 0., 0., sigx, sigy, phi, A, 0.)))        
-      if verbose>=2 :
-        print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'
-              .format('#','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
-      if verbose>=1 :
-        print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'
-              .format('gauss',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
-      if self.divvy :
-        self.outfile.write('{:<30} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'
-                           .format(self.imagename,afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),
-                                   abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))            
+      if (afit[0]>x0 and afit[0]<x1 and afit[1]>y0 and afit[1]<y1 and afit[5]>afit[6]) :
+        # double ert = -( a(3) * tx * tx + a(4) * ty * ty );  # usmlib.h
+        # fwhm0  = 2. * sqrt( M_LN2 / a(3) );                 # starphot.cpp
+        # refa(0)  =  refa(2)*M_PI/sqrt(refa(3)*refa(4));     # starphot.cpp
+        fwhmx = abs(afit[2]) * np.sqrt(8.*np.log(2.))
+        fwhmy = abs(afit[3]) * np.sqrt(8.*np.log(2.))
+        fwhm = np.sqrt(fwhmx*fwhmy)
+        a3 = 1./(2.*afit[2]**2)
+        a4 = 1./(2.*afit[3]**2)
+        totflux = afit[5] * np.pi / np.sqrt( a3 * a4);
+        if verbose>=5 :
+          xn, yn = np.linspace(-30., 30., 61, dtype=float), np.linspace(-30., 30., 61, dtype=float)
+          Xn, Yn = np.meshgrid(yn,xn)
+          yyn = Xn.ravel()
+          xxn = Yn.ravel()
+          xx0, yy0, sigx, sigy, phi, A, C = afit
+          print("numerical totflux = ",np.sum(self.gauss(xxn, yyn, 0., 0., sigx, sigy, phi, A, 0.)))        
+        if verbose>=2 :
+          print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'
+                .format('#','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
+        if verbose>=1 :
+          print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'
+                .format('gauss',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        if self.divvy :
+          self.outfile.write('{:<30} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'
+                             .format(self.imagename,afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),
+                                     abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))            
+        else :
+          if verbose>=0 :
+            self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'
+                               .format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
+            self.outfile.write('{:<30} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'
+                               .format(self.imagename,'gauss',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),
+                                       abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        self.ax.plot(afit[0],afit[1],marker="+",c='g',ms=10)
       else :
-        if verbose>=0 :
-          self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'
-                             .format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
-          self.outfile.write('{:<30} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'
-                             .format(self.imagename,'gauss',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),
-                                     abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
-      self.ax.plot(afit[0],afit[1],marker="+",c='g',ms=10)
-      
+        print('wrong click?')
+        afit[0]=0.
+        afit[1]=0.
     else :
       #astart = ( xc , yc , 2.1 , 2. , 45./180.*np.pi , amp )
       astart = ( xc , yc , 2.1 , 2. , 45./180.*np.pi , amp , bg )
@@ -336,35 +337,47 @@ class Image_Analyzer:
       #afit[0:6] = res.x
       #afit[6] = 0.
       afit = res.x
-      # ert = 1.+0.5*(tx/sigx)**2 +0.5*(ty/sigy)**2
-      # double ert = 1. + ( a(3) * tx ) * ( a(3) * tx ) + ( a(4) * ty ) * ( a(4) * ty );   # usmlib.h
-      # fwhm0 = 2. * sqrt( pow( 2., 1. / a(8) ) - 1. ) / a(3);                             # starphot.cpp
-      # a0(0)  =  a(2) * M_PI / ( (a(8)-1.) * a(3) * a(4) );                               # starphot.cpp
-      a8 = 3.0
-      a3 = np.sqrt( 1./(2.*afit[2]**2) )
-      a4 = np.sqrt( 1./(2.*afit[3]**2) )
-      fwhmx = 2. * np.sqrt( 2.**( 1. / a8 ) - 1. ) / a3
-      fwhmy = 2. * np.sqrt( 2.**( 1. / a8 ) - 1. ) / a4
-      fwhm = np.sqrt(fwhmx*fwhmy)
-      totflux = afit[5] * np.pi / ( (a8-1.) * a3 * a4 )
-      if verbose>=5 :
-        xn, yn = np.linspace(-30., 30., 61, dtype=float), np.linspace(-30., 30., 61, dtype=float)
-        Xn, Yn = np.meshgrid(yn,xn)
-        yyn = Xn.ravel()
-        xxn = Yn.ravel()
-        xx0, yy0, sigx, sigy, phi, A, C = afit
-        print("numerical totflux = ",np.sum(self.moffat(xxn, yyn, 0., 0., sigx, sigy, phi, A, 0.)))        
-      if verbose>=2 :
-        print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
-      if verbose>=1 :
-        print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format('moffat',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
-      if self.divvy :
-          self.outfile.write('{:<30} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+      if (afit[0]>x0 and afit[0]<x1 and afit[1]>y0 and afit[1]<y1 and afit[5]>afit[6]) :
+        # ert = 1.+0.5*(tx/sigx)**2 +0.5*(ty/sigy)**2
+        # double ert = 1. + ( a(3) * tx ) * ( a(3) * tx ) + ( a(4) * ty ) * ( a(4) * ty );   # usmlib.h
+        # fwhm0 = 2. * sqrt( pow( 2., 1. / a(8) ) - 1. ) / a(3);                             # starphot.cpp
+        # a0(0)  =  a(2) * M_PI / ( (a(8)-1.) * a(3) * a(4) );                               # starphot.cpp
+        a8 = 3.0
+        a3 = np.sqrt( 1./(2.*afit[2]**2) )
+        a4 = np.sqrt( 1./(2.*afit[3]**2) )
+        fwhmx = 2. * np.sqrt( 2.**( 1. / a8 ) - 1. ) / a3
+        fwhmy = 2. * np.sqrt( 2.**( 1. / a8 ) - 1. ) / a4
+        fwhm = np.sqrt(fwhmx*fwhmy)
+        totflux = afit[5] * np.pi / ( (a8-1.) * a3 * a4 )
+        if verbose>=5 :
+          xn, yn = np.linspace(-30., 30., 61, dtype=float), np.linspace(-30., 30., 61, dtype=float)
+          Xn, Yn = np.meshgrid(yn,xn)
+          yyn = Xn.ravel()
+          xxn = Yn.ravel()
+          xx0, yy0, sigx, sigy, phi, A, C = afit
+          print("numerical totflux = ",np.sum(self.moffat(xxn, yyn, 0., 0., sigx, sigy, phi, A, 0.)))        
+        if verbose>=2 :
+          print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'
+                .format('#','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
+        if verbose>=1 :
+          print('{:10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'
+                .format('moffat',afit[0],afit[1],totflux,afit[6],afit[5],
+                        abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        if self.divvy :
+            self.outfile.write('{:<30} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'
+                               .format(self.imagename,afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),
+                                       abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        else :
+          if verbose>=0 :
+            self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'
+                               .format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
+            self.outfile.write('{:<30} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'
+                               .format(self.imagename,'moffat',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
+        self.ax.plot(afit[0],afit[1],marker="x",c='b',ms=10)
       else :
-        if verbose>=0 :
-          self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux' ,'sky', 'A', 'sigx', 'sigy', 'phi', 'fwhm' ))
-          self.outfile.write('{:<30} {:<10} {:10.2f} {:10.2f} {:10.1f} {:10.3f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}\n'.format(self.imagename,'moffat',afit[0],afit[1],totflux,afit[6],afit[5],abs(afit[2]),abs(afit[3]),afit[4]%np.pi/np.pi*180., fwhm))
-      self.ax.plot(afit[0],afit[1],marker="x",c='b',ms=10)
+        print('wrong click?')
+        afit[0]=0.
+        afit[1]=0.
     return afit[0],afit[1]
 
 
@@ -497,7 +510,8 @@ class Image_Analyzer:
         print('=============================================================================================================')
     self.imagename = self.imagelist[self.imagenr]
     self.title = '{}     {} of {}'.format(self.imagename,self.imagenr+1,self.imagelistend )
-    self.imamat = np.transpose(pyfits.getdata(self.imagename).astype(np.float32))
+    self.imamat_plot = pyfits.getdata(self.imagename).astype(np.float32)
+    self.imamat = np.transpose(self.imamat_plot)
     ima_med = np.nanmedian(self.imamat)
     ima_std = np.nanstd(self.imamat)
     ima_min = np.nanmin(self.imamat)
@@ -527,7 +541,7 @@ class Image_Analyzer:
     # print('self.ax=',self.ax)
     self.ax.clear()
     self.cmap = copy.copy(mpl.cm.get_cmap(self.cmap_all[self.cmap_nr]))
-    self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap=self.cmap, vmin=self.cut0,
+    self.imshow = self.ax.imshow( self.imamat_plot, origin='lower', cmap=self.cmap, vmin=self.cut0,
                                   vmax=self.cut1, extent=self.extent)
     self.imshow.figure.canvas.set_window_title(self.title)
     current_cmap = self.imshow.get_cmap()
@@ -581,24 +595,172 @@ class Image_Analyzer:
 
     
   def onclick(self, event):
-    # print(event.button,event.key)
+
+    #plt.sca(self.ax) ## axes BUG
+    #plt.axes(self.ax) ## axes BUG
+    
+    #print(event.button,event.key)
     if (self.verbose>2) :
       print('%s click: button=%d, key=%s, x=%d, y=%d, xdata=%f, ydata=%f' %
               ('double' if event.dblclick else 'single', event.button,
                event.key,event.x, event.y, event.xdata, event.ydata))
 
-    #if (event.button==1)  : 
-    #  print('left mouse')
+    if (event.button==1) :
+      # print('left mouse')
       
-    if (event.button==2)  : # Previous
+      if (event.key=='1')  :
+        #print(event)
+        pos = [event.xdata, event.ydata]
+        self.xc, self.yc = self.get_cursor(pos,verbose=self.verbose)
+        if self.zoom!=0 :
+          self.ax.xaxis.zoom(self.zoom) 
+          self.ax.yaxis.zoom(self.zoom)
+        self.imshow.figure.canvas.draw_idle()
+        
+      elif (event.key=='2') :
+        #print(event)
+        pos = [event.xdata, event.ydata]
+        self.xc, self.yc = self.fit_psf(pos,use_moffat=False,verbose=self.verbose)
+        if self.zoom!=0 :
+          self.ax.xaxis.zoom(self.zoom) 
+          self.ax.yaxis.zoom(self.zoom)
+        #self.imshow.figure.canvas.set_message("HALLO")
+        self.imshow.figure.canvas.draw_idle()
+  
+      elif (event.key=='3') :
+        pos = [event.xdata, event.ydata]
+        self.xc, self.yc = self.fit_psf(pos,use_moffat=True,verbose=self.verbose)
+        if self.zoom!=0 :
+          self.ax.xaxis.zoom(self.zoom) 
+          self.ax.yaxis.zoom(self.zoom)
+        self.imshow.figure.canvas.draw_idle()
+    
+      elif (event.key=='4') :
+        pos = [event.xdata, event.ydata]
+        self.xc, self.yc = self.fit_psf(pos,use_moffat=False,verbose=-1)
+        ixc=int(self.xc+0.5)
+        iyc=int(self.yc+0.5)
+    
+        ####### growing curve
+        prec = self.precaper
+        maxaper = self.maxaper
+        # self.sky0 = np.nanmean(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
+        # self.sky0 = np.nanmedian(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
+        #c, low, upp = sigmaclip(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50],3.,2.,nan_policy=‘omit’)
+        #cenfunc='np.nanmean',stdfunc='np.nanstd)')
+        #c, low, upp = sigmaclip(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50],3.,2.)
+        #self.sky0 = np.average(c)
+        #self.sky0 = np.nanmean(c)
+        self.sky0 = np.nanmedian(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
+        #print("c, low, upp  = ",np.average(c), low, upp )
+        #print(" self.sky0=", self.sky0)
+        self.r = np.linspace(1.,maxaper,prec)
+        #print(self.r)
+        aper2 = self.r**2+1.
+        self.grow = np.zeros(prec)
+        self.area = np.zeros(prec)        
+        self.growsky = np.zeros(prec)
+        for i in range(prec) :
+          s=0.
+          n=0
+          #print('{:10} {:10.0f} {:10.0f} {}'.format('test mask',ixc,iyc,self.imamat[ixc-1,iyc-1]))
+          for ix in range(ixc-maxaper-1,ixc+maxaper+1) :
+            for iy in range(iyc-maxaper-1,iyc+maxaper+1) :
+              r2 = (ix-self.xc)**2+(iy-self.yc)**2
+              # if r2<=aper2[i] :              
+              if r2<aper2[i] :
+                value = self.imamat[ix-1,iy-1]
+                #print('value=',value)
+                if not np.isnan(value) :
+                  #print('value=',value)                  
+                  s += value - self.sky0
+                  n += 1
+                #else :
+                #  print('nan=',value)
+          self.grow[i] = s
+          self.area[i] = n
+          self.growsky[i] = s+n*self.sky0
+        #print("self.grow=",self.grow)
+        self.maxgrow = np.nanmax(self.grow)
+        grow_min = np.nanmin(self.grow)
+        grow_max = np.nanmax(self.grow)
+        grow_del = grow_max - grow_min
+        #print("grow_min=",grow_min)
+        #print("grow_max=",grow_max)
+        self.ylim0 = grow_min-0.1*grow_del
+        self.ylim1 = grow_max+0.1*grow_del
+  
+        fig2, self.ax2 = plt.subplots(figsize=(6,4),facecolor='w')
+        self.lineg, = self.ax2.plot(self.r,self.grow,color='lightblue',zorder=1)
+        self.linef, = self.ax2.plot([None,None],[None,None],color='mistyrose',zorder=0)
+        self.linec, = self.ax2.plot(self.r,self.grow,color='b',zorder=3)
+        self.pointc,= self.ax2.plot(self.r,self.grow, marker='o', linestyle=None, ms=3, linewidth=0,color='b',zorder=4)
+        self.line1, = self.ax2.plot([None,None],[None,None],color='grey',zorder=2)
+        self.line2, = self.ax2.plot([None,None],[None,None],color='grey',zorder=2)
+        self.lineh, = self.ax2.plot([None,None],[None,None],color='r',   zorder=2)
+        #linef, = plt.plot([p1.x_fwhm,p1.x_fwhm],[0.,1.2*p1.totflux],color='g',zorder=0)
+        self.ax2.set_xlabel("radius")
+        self.ax2.set_ylabel("flux")
+        self.axtitle = self.ax2.set_title('{} {:10.1f} {}'.format(self.imagename,self.totflux,'(growing curve)'))
+        self.ax2.set_ylim([self.ylim0,self.ylim1])
+  
+        self.click2 = False
+        cursor2 = Cursor( self.ax2, useblit=False, color='g', linewidth=1 )
+        cid2 = fig2.canvas.mpl_connect('button_press_event',self.growing_curve)
+        #cid3 = fig2.canvas.mpl_connect('close_event',self.growing_curve_close)
+        cid4 = fig2.canvas.mpl_connect('key_press_event',self.keypress)
+        if self.verbose>=2 :
+          print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
+        if not(self.divvy) :
+          self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
+  
+        fig2.show()
+
+      elif (event.key=='0')  :
+        self.xc = int(event.xdata+0.5)
+        self.yc = int(event.ydata+0.5)
+        if self.verbose>=2 :
+          print('{:<10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'oldvalue', 'value'))
+        if self.verbose>=1 :         
+          print('{:10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}'
+                .format('mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
+        if self.divvy :
+          self.outfile.write('{:<30} {:10.0f} {:10.0f} {:10.2f} {:10.2f}\n'
+                             .format(self.imagename,self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
+        else :
+          self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10}\n'
+                             .format('#','method','xc', 'yc', 'oldvalue', 'value'))
+          self.outfile.write('{:<30} {:<10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}\n'
+                             .format(self.imagename,'mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
+        mx0 = self.xc-5
+        mx1 = self.xc+5
+        my0 = self.yc-5
+        my1 = self.yc+5
+        r2max = 5**2+1
+        #self.imamat[mx0-1:mx1,my0-1:my1] = np.nan
+        for ix in range(mx0,mx1+1) :
+          for iy in range(my0,my1+1) :
+              r2 = (ix-self.xc)**2+(iy-self.yc)**2
+              if r2<=r2max :
+                self.imamat[ix-1,iy-1] = np.nan 
+        #print('imamat',self.imamat[mx0-1:mx1,my0-1:my1])
+        #if self.verbose>=1 :         
+        #  print('{:10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}'.format('mask',self.xc,self.yc,
+        #        self.imamat[self.xc-1,self.yc-1],np.nan))
+        self.imshow = self.ax.imshow( self.imamat_plot, origin='lower', cmap=self.cmap,
+                                      vmin=self.cut0, vmax=self.cut1, extent=self.extent) 
+        self.imshow.figure.canvas.draw_idle()
+        #self.load()
+
+    elif (event.button==2)  : # Previous
       # print('middle mouse')
       if (self.imagenr>0) :
         self.imagenr = self.imagenr - 1
       else :
         self.imagenr = self.imagelistend - 1 
       self.load()
-
-    if (event.button==3)  : # next
+    
+    elif (event.button==3)  : # next
       # print('right mouse')
       # print('self.imagenr=',self.imagenr)
       if (self.imagenr<self.imagelistend-1) :
@@ -607,148 +769,11 @@ class Image_Analyzer:
         self.imagenr = 0          
       self.load()
 
-    if (event.button==1 and event.key=='0')  :
-      self.xc = int(event.xdata+0.5)
-      self.yc = int(event.ydata+0.5)
-      if self.verbose>=2 :
-        print('{:<10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'oldvalue', 'value'))
-      if self.verbose>=1 :         
-        print('{:10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}'
-              .format('mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
-      if self.divvy :
-        self.outfile.write('{:<30} {:10.0f} {:10.0f} {:10.2f} {:10.2f}\n'
-                           .format(self.imagename,self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
-      else :
-        self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10}\n'
-                           .format('#','method','xc', 'yc', 'oldvalue', 'value'))
-        self.outfile.write('{:<30} {:<10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}\n'
-                           .format(self.imagename,'mask',self.xc,self.yc,self.imamat[self.xc-1,self.yc-1],np.nan))
-      mx0 = self.xc-5
-      mx1 = self.xc+5
-      my0 = self.yc-5
-      my1 = self.yc+5
-      r2max = 5**2+1
-      #self.imamat[mx0-1:mx1,my0-1:my1] = np.nan
-      for ix in range(mx0,mx1+1) :
-        for iy in range(my0,my1+1) :
-            r2 = (ix-self.xc)**2+(iy-self.yc)**2
-            if r2<=r2max :
-              self.imamat[ix-1,iy-1] = np.nan 
-      #print('imamat',self.imamat[mx0-1:mx1,my0-1:my1])
-      #if self.verbose>=1 :         
-      #  print('{:10} {:10.0f} {:10.0f} {:10.2f} {:10.2f}'.format('mask',self.xc,self.yc,
-      #        self.imamat[self.xc-1,self.yc-1],np.nan))
-      self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower', cmap=self.cmap,
-                                    vmin=self.cut0, vmax=self.cut1, extent=self.extent)
-      self.imshow.figure.canvas.draw_idle()
-      #self.load()
-      
-    if (event.button==1 and event.key=='1')  :
-      pos = [event.xdata, event.ydata]
-      self.xc, self.yc = self.get_cursor(pos,verbose=self.verbose)
-      if self.zoom!=0 :
-        self.ax.xaxis.zoom(self.zoom) 
-        self.ax.yaxis.zoom(self.zoom)
-      self.imshow.figure.canvas.draw_idle()
+    self.ax.set_navigate(True)
+    #plt.sca(self.ax) ## axes BUG
+    #self.fig.axes(self.ax) ## axes BUG     
 
-    if (event.button==1 and event.key=='2') :
-      pos = [event.xdata, event.ydata]
-      self.xc, self.yc = self.fit_psf(pos,use_moffat=False,verbose=self.verbose)
-      if self.zoom!=0 :
-        self.ax.xaxis.zoom(self.zoom) 
-        self.ax.yaxis.zoom(self.zoom)
-      self.imshow.figure.canvas.draw_idle()
-  
-    if (event.button==1 and event.key=='3') :
-      pos = [event.xdata, event.ydata]
-      self.xc, self.yc = self.fit_psf(pos,use_moffat=True,verbose=self.verbose)
-      if self.zoom!=0 :
-        self.ax.xaxis.zoom(self.zoom) 
-        self.ax.yaxis.zoom(self.zoom)
-      self.imshow.figure.canvas.draw_idle()
-  
-    if (event.button==1 and event.key=='4') :
-      pos = [event.xdata, event.ydata]
-      self.xc, self.yc = self.fit_psf(pos,use_moffat=False,verbose=-1)
-      ixc=int(self.xc+0.5)
-      iyc=int(self.yc+0.5)
-  
-      ####### growing curve
-      prec = self.precaper
-      maxaper = self.maxaper
-      # self.sky0 = np.nanmean(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
-      # self.sky0 = np.nanmedian(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
-      #c, low, upp = sigmaclip(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50],3.,2.,nan_policy=‘omit’)
-      #cenfunc='np.nanmean',stdfunc='np.nanstd)')
-      #c, low, upp = sigmaclip(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50],3.,2.)
-      #self.sky0 = np.average(c)
-      #self.sky0 = np.nanmean(c)
-      self.sky0 = np.nanmedian(self.imamat[ixc-1-50:ixc-1+50,iyc-1-50:iyc-1+50])
-      #print("c, low, upp  = ",np.average(c), low, upp )
-      #print(" self.sky0=", self.sky0)
-      self.r = np.linspace(1.,maxaper,prec)
-      #print(self.r)
-      aper2 = self.r**2+1.
-      self.grow = np.zeros(prec)
-      self.area = np.zeros(prec)        
-      self.growsky = np.zeros(prec)
-      for i in range(prec) :
-        s=0.
-        n=0
-        #print('{:10} {:10.0f} {:10.0f} {}'.format('test mask',ixc,iyc,self.imamat[ixc-1,iyc-1]))
-        for ix in range(ixc-maxaper-1,ixc+maxaper+1) :
-          for iy in range(iyc-maxaper-1,iyc+maxaper+1) :
-            r2 = (ix-self.xc)**2+(iy-self.yc)**2
-            # if r2<=aper2[i] :              
-            if r2<aper2[i] :
-              value = self.imamat[ix-1,iy-1]
-              #print('value=',value)
-              if not np.isnan(value) :
-                #print('value=',value)                  
-                s += value - self.sky0
-                n += 1
-              #else :
-              #  print('nan=',value)
-        self.grow[i] = s
-        self.area[i] = n
-        self.growsky[i] = s+n*self.sky0
-      #print("self.grow=",self.grow)
-      self.maxgrow = np.nanmax(self.grow)
-      grow_min = np.nanmin(self.grow)
-      grow_max = np.nanmax(self.grow)
-      grow_del = grow_max - grow_min
-      #print("grow_min=",grow_min)
-      #print("grow_max=",grow_max)
-      self.ylim0 = grow_min-0.1*grow_del
-      self.ylim1 = grow_max+0.1*grow_del
-
-      fig2, self.ax2 = plt.subplots(figsize=(6,4),facecolor='w')
-      self.lineg, = self.ax2.plot(self.r,self.grow,color='lightblue',zorder=1)
-      self.linef, = self.ax2.plot([None,None],[None,None],color='mistyrose',zorder=0)
-      self.linec, = self.ax2.plot(self.r,self.grow,color='b',zorder=3)
-      self.pointc,= self.ax2.plot(self.r,self.grow, marker='o', linestyle=None, ms=3, linewidth=0,color='b',zorder=4)
-      self.line1, = self.ax2.plot([None,None],[None,None],color='grey',zorder=2)
-      self.line2, = self.ax2.plot([None,None],[None,None],color='grey',zorder=2)
-      self.lineh, = self.ax2.plot([None,None],[None,None],color='r',   zorder=2)
-      #linef, = plt.plot([p1.x_fwhm,p1.x_fwhm],[0.,1.2*p1.totflux],color='g',zorder=0)
-      self.ax2.set_xlabel("radius")
-      self.ax2.set_ylabel("flux")
-      self.axtitle = self.ax2.set_title('{} {:10.1f} {}'.format(self.imagename,self.totflux,'(growing curve)'))
-      self.ax2.set_ylim([self.ylim0,self.ylim1])
-
-      self.click2 = False
-      cursor2 = Cursor( self.ax2, useblit=False, color='g', linewidth=1 )
-      cid2 = fig2.canvas.mpl_connect('button_press_event',self.growing_curve)
-      #cid3 = fig2.canvas.mpl_connect('close_event',self.growing_curve_close)
-      cid4 = fig2.canvas.mpl_connect('key_press_event',self.keypress)
-      if self.verbose>=2 :
-        print('{:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format('#','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
-      if not(self.divvy) :
-        self.outfile.write('{:<30} {:<10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'.format('#','method','xc', 'yc', 'totflux', 'sky', 'r0', 'r1', 'errtotflux' ))
-
-      fig2.show()
-
-        
+    
   def keypress(self, event):
       #print("event.key = ",event.key)
       #if (event.key=='z' or event.key=='Z' or event.key=='x' or event.key=='X' or event.key=='0') :              
@@ -765,9 +790,9 @@ class Image_Analyzer:
         #if (event.key=='0') :
         #  self.cut0 = 0.
         print('cuts       {:<10.1f} {:<10.1f}'.format(self.cut0,self.cut1))
-        #self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower',
+        #self.imshow = self.ax.imshow( self.imamat_plot, origin='lower',
         #                              cmap=self.cmap, vmin=self.cut0, vmax=self.cut1)
-        self.imshow = self.ax.imshow( np.transpose(self.imamat), origin='lower',
+        self.imshow = self.ax.imshow( self.imamat_plot, origin='lower',
                                       cmap=self.cmap, vmin=self.cut0, vmax=self.cut1, extent=self.extent)
         self.imshow.figure.canvas.draw_idle()
       if event.key==' ' :
@@ -780,7 +805,7 @@ class Image_Analyzer:
       if event.key=='o' :
         xn, yn = np.linspace(0.5,self.nx+0.5, self.nx, dtype=float), np.linspace(0.5,self.ny+0.5, self.ny, dtype=float)
         Xn, Yn = np.meshgrid(xn,yn)
-        Z = np.transpose(self.imamat)
+        Z = self.imamat_plot
         ima_min = np.nanmin(self.imamat)
         ima_max = np.nanmax(self.imamat)
         ima_del = ima_max - ima_min
@@ -793,13 +818,13 @@ class Image_Analyzer:
         
 ########################### MAIN
 
-parser = argparse.ArgumentParser(description='showfits.py (2021-03-13) copyright Arno Riffeser (arri@usm.lmu.de)\n')
+parser = argparse.ArgumentParser(description='showfits.py V1.0 (2021-03-15) (c) Arno Riffeser (arri@usm.lmu.de)\n')
 parser.add_argument(              'imagelist',       nargs='*',                   help='image list')
 parser.add_argument('-figsize',   dest='figsize',    type=str,   default='8.75,8.75',   help='[%(default)s] figsize' )
 parser.add_argument('-v',         dest='verbose',    type=int,   default=2,       help='[%(default)s] verbose' )
 parser.add_argument('-precaper',  dest='precaper',   type=int,   default=80,      help='[%(default)s] precaper' )
 parser.add_argument('-maxaper',   dest='maxaper',    type=int,   default=80,      help='[%(default)s] maxaper' )
-parser.add_argument('-fitradius', dest='fitradius',  type=int,   default='7',     help='[%(default)s] fitradius' )
+parser.add_argument('-fitradius', dest='fitradius',  type=int,   default='15',     help='[%(default)s] fitradius' )
 parser.add_argument('-divvy',     dest='divvy',      action='store_true',         help='[%(default)s] divvy' )
 parser.add_argument('-zoom',      dest='zoom',       type=int,   default='0',     help='[%(default)s] zoom' )
 args = parser.parse_args()
@@ -840,10 +865,28 @@ if args.imagelist==[] :
     
 # https://matplotlib.org/3.3.0/users/interactive_guide.html
 
+# print(mpl.rcParams)
+# mpl.rcParams.all_axes =['a']
+# mpl.rcParams.back =['left', 'c', 'backspace', 'MouseButton.BACK']
+# mpl.rcParams.copy =['ctrl+c', 'cmd+c']
+# mpl.rcParams.forward =['right', 'v', 'MouseButton.FORWARD']
+# mpl.rcParams.fullscreen =['f', 'ctrl+f']
+# mpl.rcParams.grid =['g']
+# mpl.rcParams.grid_minor =['G']
+# mpl.rcParams.help =['f1']
+# mpl.rcParams.home =['h', 'r', 'home']
+# mpl.rcParams.pan =['p']
+# mpl.rcParams.quit =['ctrl+w', 'cmd+w', 'q']
+# mpl.rcParams.quit_all =['W', 'cmd+W', 'Q']
+# mpl.rcParams.save =['s', 'ctrl+s']
+# mpl.rcParams.xscale =['k', 'L']
+# mpl.rcParams.yscale =['l']
+# mpl.rcParams.zoom =['o']
+
+
 imagelist = args.imagelist
 outfile  = open( 'showfits.tab' , 'w' )
 fig = plt.figure(figsize=(figsize[0],figsize[1]),facecolor='w',dpi=100)
-
 
 ia = Image_Analyzer(fitradius,precaper,maxaper,args.zoom,verbose,args.divvy,outfile)
 ia.start(fig)
@@ -852,7 +895,6 @@ ia.load()
 ia.connect()
 plt.show()
 ia.disconnect()
-
 
 
 outfile.close()
