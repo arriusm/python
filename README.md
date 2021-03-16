@@ -1,12 +1,5 @@
 # usmpy
 
-## git
-
-git add showfits.py 
-git commit -m "changes..."
-git push origin
-
-
 ## showfits
 
 - fits viewer with gauss fit, moffat fit and interactive growing curve analysis
