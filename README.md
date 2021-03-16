@@ -14,74 +14,87 @@ git push origin
 - options
 
 ```
-  > showfits.py -h
+  > showfits.py
 
   usage: showfits.py [-h] [-figsize FIGSIZE] [-v VERBOSE] [-precaper PRECAPER]
-                     [-maxaper MAXAPER] [-fitradius FITRADIUS]
+                     [-maxaper MAXAPER] [-fitradius FITRADIUS] [-zoom ZOOM]
+                     [-divvy]
                      [imagelist [imagelist ...]]
   
-  showfits.py (2020-11-18) by Arno Riffeser (arri@usm.lmu.de)
+  showfits.py V1.0 (2021-03-16) (c) USM, Arno Riffeser (arri@usm.lmu.de)
   
   positional arguments:
     imagelist             image list
   
   optional arguments:
     -h, --help            show this help message and exit
-    -figsize FIGSIZE      [8,6] figsize
+    -figsize FIGSIZE      [8.75,8.75] figsize
     -v VERBOSE            [2] verbose
     -precaper PRECAPER    [80] precaper
     -maxaper MAXAPER      [80] maxaper
-    -fitradius FITRADIUS  [7] fitradius
-```
-
-- runtime commands
-
-```
-  > showfits.py 
-  usage:
-    1+click - get cursor
-    2+click - center gauss
-    3+click - center moffat
-    4+click - growing curve
-    0+click - masking
-	z - decrease lower cut
-	Z - increase lower cut
-	x - decrease higher cut
-	X - increase higher cut
-    p - pan (move center)
-    r - reset (zoom home)
-    c - zoom back
-    v - zoom forward
-    left  - zoom back
-    right - zoom forward
-    k - x axis log
-    l - y axis log
-    s - save image
-    q - quit
+    -fitradius FITRADIUS  [15] fitradius
+    -zoom ZOOM            [0] zoom
+    -divvy                [False] divvy
+  
+  usage in plot window:
+      1+click - get cursor
+      2+click - center gauss
+      3+click - center moffat
+      4+click - growing curve
+      0+click - masking
+            z - decrease lower cut
+            x - increase lower cut
+            Z - decrease higher cut
+            X - increase higher cut
+            p - pan (move center)
+            r - reset (zoom home)
+            f - full frame
+            c - zoom back
+            v - zoom forward
+         left - zoom back
+        right - zoom forward
+            k - x axis log
+            l - y axis log
+            s - save image
+            q - quit
 ```
 
 - example
 
 ```
-  > showfits.py  -figsize 7,5  -v 2  -fitradius 7  HD12303_r.fit
-  ['HD12303_r.fit']
-  =============================================================================================================
-  imagename      HD12303_r.fit
-  image(nx,ny)        2328       1760
-  cuts               611.0      816.3
-  #
-  #                  xc         yc      value
-  pixel            1299        982     664.00
-  #                  xc         yc    totflux        sky          A       sigx       sigy        phi       fwhm
-  gauss         1157.72     879.03    40930.1    752.097    4807.42       1.22       1.11      20.35       2.74
-  #                  xc         yc    totflux        sky          A       sigx       sigy        phi       fwhm
-  moffat        1157.72     879.03    48267.8    721.033    5292.47       1.80       1.61      16.68       2.46
-  #                  xc         yc    totflux        sky         r0         r1 errtotflux
-  grow.curve    1157.72     879.03    62003.1    680.147       22.0       55.0     1046.7
-  grow.curve    1157.72     879.03    61948.3    680.161       22.0       57.0     1046.7
-  ---------------------------------------------------------------------------------------
-  grow.curve    1157.72     879.03    61948.3    680.161       22.0       57.0     1046.7
+   > showfits.py  *.fits
+   nr_images   6
+   1   17P_r_071029_095.fits
+   2   17P_r_071029_095_copy.fits
+   3   data.fits
+   4   emtveb_dskq1wc-V151220-m31_f1_r_151220_230.fits
+   5   res.fits
+   6   test.fits
+   =============================================================================================================
+   nr          1  of  6
+   imagename   17P_r_071029_095.fits
+   imagesize   1100       1040      
+   cuts        -6747.5    15317.8   
+   cuts        -6747.5    19730.8   
+   cuts        -6747.5    25026.5   
+   cuts        -6747.5    31381.3   
+   #                  xc         yc      value
+   pixel             126        202   34883.00
+   #                  xc         yc    totflux        sky          A       sigx       sigy        phi       fwhm
+   gauss          125.89     201.97   300566.1    615.891   33148.02       1.31       1.10      59.48       2.83
+   #                  xc         yc    totflux        sky          A       sigx       sigy        phi       fwhm
+   moffat         125.88     201.96   348154.6    566.523   36104.29       1.91       1.61      58.88       2.53
+   #                  xc         yc    totflux        sky         r0         r1 errtotflux
+   grow.curve     125.89     201.97   334546.2    576.293       13.0       39.0      805.7
+   grow.curve     125.89     201.97   342713.0    570.957       10.0       32.0      724.2
+   ---------------------------------------------------------------------------------------
+   grow.curve     125.89     201.97   342713.0    570.957       10.0       32.0      724.2
+   ---------------------------------------------------------------------------------------
+   ---------------------------------------------------------------------------------------
 ```
+
+
+
 
 ## exposure time calculator
 
