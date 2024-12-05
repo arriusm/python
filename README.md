@@ -156,7 +156,7 @@ important:
 
 
 
-## exposure time calculator
+## exposure_time_calculator.py
 
 - simply change the mag_in and SN_in vector (vector because all filters are always calculated at the same time), then texp, Npeak, Nsky are calculated
 
