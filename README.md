@@ -58,8 +58,7 @@ important:
                         [-cuts CUTS]
                         [imagelist ...]
      
-     showfits.py V1.4.11 (2024-12-05) (c) USM, Arno Riffeser (arri@usm.lmu.de) based on showfits of Claus Goessl and fitsedit of
-     Johannes Koppenhoefer
+     showfits.py V1.4.11 (2024-12-05) (c) USM, Arno Riffeser (arri@usm.lmu.de) based on showfits of Claus Goessl and fitsedit of Johannes Koppenhoefer
      
      positional arguments:
        imagelist             image list
