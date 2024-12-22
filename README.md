@@ -1,5 +1,45 @@
 # python
 
+## rgbfits.py
+
+- options
+```
+usage: rgbfits.py [-h] [-lupton] [-kmin KMIN] [-kmax KMAX] [-r R_FILENAME] [-g G_FILENAME] [-b B_FILENAME] [-rmin RMIN]
+                  [-rmax RMAX] [-gmin GMIN] [-gmax GMAX] [-bmin BMIN] [-bmax BMAX] [-o REGION] [-log] [-jpg]
+
+rgbfits.py  arri@usm.lmu.de  2024-12-22
+
+options:
+  -h, --help     show this help message and exit
+  -lupton        [False] lupton
+  -kmin KMIN     [-0.1] kmin
+  -kmax KMAX     [1.0] kmax
+  -r R_FILENAME  [] r file name
+  -g G_FILENAME  [] g file name
+  -b B_FILENAME  [] b file name
+  -rmin RMIN     [None] rmin
+  -rmax RMAX     [None] rmax
+  -gmin GMIN     [None] gmin
+  -gmax GMAX     [None] gmax
+  -bmin BMIN     [None] bmin
+  -bmax BMAX     [None] bmax
+  -o REGION      [0:0,0:0] region
+  -log           [False] log
+  -jpg           [False] jpg
+```
+
+- examples
+
+```
+  ./rgbfits.py  -h
+  ./rgbfits.py  -r M31_i.fits  -g M31_r.fits  -b M31_g.fits
+  ./rgbfits.py  -r M31_i.fits  -g M31_r.fits  -b M31_g.fits -kmin -0.2 -kmax 0.5
+  ./rgbfits.py  -r M31_i.fits  -g M31_r.fits  -b M31_g.fits -kmin -0.2 -kmax 0.5 -jpg
+```
+
+
+
+
 ## redmine.py
 
 - options
