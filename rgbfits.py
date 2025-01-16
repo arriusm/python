@@ -1,4 +1,5 @@
 #!/Users/arri/miniconda3/bin/python
+###!/data/u/ps1ipp/miniconda3_3.9/bin/python
 ###!/opt/miniconda3/bin/python
 ###!/Users/arri/miniconda3/bin/python
 
@@ -54,10 +55,17 @@ parser.add_argument('-gmin',   dest='gmin',             type=float, default=None
 parser.add_argument('-gmax',   dest='gmax',             type=float, default=None,      help='[%(default)s] gmax' )
 parser.add_argument('-bmin',   dest='bmin',             type=float, default=None,      help='[%(default)s] bmin' )
 parser.add_argument('-bmax',   dest='bmax',             type=float, default=None,      help='[%(default)s] bmax' )
+parser.add_argument('-rstart', dest='rstart',           type=float, default=None,      help='[%(default)s] rstart' )
+parser.add_argument('-rend',   dest='rend',             type=float, default=None,      help='[%(default)s] rend' )
+parser.add_argument('-gstart', dest='gstart',           type=float, default=None,      help='[%(default)s] gstart' )
+parser.add_argument('-gend',   dest='gend',             type=float, default=None,      help='[%(default)s] gend' )
+parser.add_argument('-bstart', dest='bstart',           type=float, default=None,      help='[%(default)s] bstart' )
+parser.add_argument('-bend',   dest='bend',             type=float, default=None,      help='[%(default)s] bend' )
 parser.add_argument('-o',      dest='region',           type=str,   default='0:0,0:0', help='[%(default)s] region' )
 parser.add_argument('-log',    dest='log',     action="store_true", default=False,     help='[%(default)s] log' )
 parser.add_argument('-jpg',    dest='jpg',     action="store_true", default=False,     help='[%(default)s] jpg' )
 #parser.add_argument('-png',    dest='png',     action="store_true", default=False,     help='[%(default)s] png' )
+parser.add_argument('-asinh',    dest='asinh',     action="store_true", default=False,     help='[%(default)s] asinh' )
 args = parser.parse_args()
 
 
@@ -108,21 +116,31 @@ hdul = fits.open(args.b_filename)
 c3_mat = hdul[0].data
 
 
-c1 = c1_mat[xreg,yreg]
-c2 = c2_mat[xreg,yreg]
-c3 = c3_mat[xreg,yreg]
+c1mean = 0
+c2mean = 0
+c3mean = 0
+c1std  = 0
+c2std  = 0
+c3std  = 0
 
-c1[np.isinf(c1)]=np.nan
-c2[np.isinf(c2)]=np.nan
-c3[np.isinf(c3)]=np.nan
+if args.rmin==None or args.rmax==None :
+  c1 = c1_mat[xreg,yreg]
+  c1[np.isinf(c1)]=np.nan
+  c1mean = np.nanmean(c1)
+  c1std = np.nanstd(c1)
 
-c1mean = np.nanmean(c1)
-c2mean = np.nanmean(c2)
-c3mean = np.nanmean(c3)
+if args.gmin==None or args.gmax==None :
+  c2 = c2_mat[xreg,yreg]
+  c2[np.isinf(c2)]=np.nan
+  c2mean = np.nanmean(c2)
+  c2std = np.nanstd(c2)
 
-c1std = np.nanstd(c1)
-c2std = np.nanstd(c2)
-c3std = np.nanstd(c3)
+if args.bmin==None or args.bmax==None :
+  c3 = c3_mat[xreg,yreg]
+  c3[np.isinf(c3)]=np.nan
+  c3mean = np.nanmean(c3)
+  c3std = np.nanstd(c3)
+
 
 #kmin = 0.5
 kmin  = args.kmin
@@ -154,10 +172,50 @@ if args.bmax == None :
 else :
   c3max = args.bmax
 
-print('color                 : {:>5s} {:>5s}'.format('min','max'))
-print('red                   : {:5.1f} {:5.1f}'.format(c1min,c1max))
-print('green                 : {:5.1f} {:5.1f}'.format(c2min,c2max))
-print('blue                  : {:5.1f} {:5.1f}'.format(c3min,c3max))
+print('color                 : {:>10s} {:>10s}'.format('min','max'))
+print('red                   : {:10.3f} {:10.3f}'.format(c1min,c1max))
+print('green                 : {:10.3f} {:10.3f}'.format(c2min,c2max))
+print('blue                  : {:10.3f} {:10.3f}'.format(c3min,c3max))
+
+if args.rmin!=None and args.rmax!=None :
+  c1std  = (c1max-c1min) / (kmax-kmin)
+  c1mean = c1min - kmin * c1std
+
+if args.gmin!=None and args.gmax!=None :
+  c2std  = (c2max-c2min) / (kmax-kmin)
+  c2mean = c2min - kmin * c2std
+
+if args.bmin!=None and args.bmax!=None :
+  c3std  = (c3max-c3min) / (kmax-kmin)
+  c3mean = c3min - kmin * c3std
+
+  
+if args.rstart!=None : 
+  c1valmin = args.rstart
+else  :
+  c1valmin = c1min  -1.*c1std
+if args.rend!=None : 
+  c1valmax = args.rend
+else  :
+  c1valmax = c1max +10.*c1std
+
+if args.gstart!=None : 
+  c2valmin = args.gstart
+else  :
+  c2valmin = c2min  -1.*c2std
+if args.gend!=None : 
+  c2valmax = args.gend
+else  :
+  c2valmax = c2max +10.*c2std
+
+if args.bstart!=None : 
+  c3valmin = args.bstart
+else  :
+  c3valmin = c3min  -1.*c3std
+if args.bend!=None : 
+  c3valmax = args.bend
+else  :
+  c3valmax = c3max +10.*c3std
 
 
 if args.lupton :
@@ -194,19 +252,33 @@ if args.lupton :
 #     https://docs.astropy.org/en/stable/api/astropy.visualization.LogStretch.html
 
 
-# http://ds9.si.edu/doc/ref/how.html
+# # http://ds9.si.edu/doc/ref/how.html
+# def normalize(x, vmin=0, vmax=5000) :
+#   y = (x-vmin) / (vmax-vmin)
+#   y01 = np.where(y<0.,0.,np.where(y>1.,1.,y))
+#   if args.log :
+#     a = 1000.
+#     #return np.log(a*y01+1)/np.log(a)
+#     return np.log(1.+a*y01)/np.log(1.+a)
+#   else :
+#     return y01
+
 def normalize(x, vmin=0, vmax=5000) :
+  print('   normalizing...')
   y = (x-vmin) / (vmax-vmin)
   y01 = np.where(y<0.,0.,np.where(y>1.,1.,y))
-  if args.log :
+  #y = None
+  if   args.log :
     a = 1000.
     #return np.log(a*y01+1)/np.log(a)
     return np.log(1.+a*y01)/np.log(1.+a)
+  elif args.asinh:
+      return np.arcsinh(10*y01)/3
   else :
     return y01
 
 
-
+  
 class myParams :
   def __init__(self) :
     self.ch1_0 = 0.
@@ -265,8 +337,11 @@ def calc_image_rgb(par) :
              ).astype(np.uint8)
   '''
 
+  print('  R_norm:')
   R_norm = (255.*normalize(c1_mat,par.ch1_0,par.ch1_1)).astype(np.uint8)  
+  print('  G_norm:')
   G_norm = (255.*normalize(c2_mat,par.ch2_0,par.ch2_1)).astype(np.uint8)
+  print('  B_norm:')
   B_norm = (255.*normalize(c3_mat,par.ch3_0,par.ch3_1)).astype(np.uint8)
 
   #print('------------------------------------------------------')
@@ -410,7 +485,7 @@ def slider_update_ch1(val):
     #print(val)
     if val != (par.ch1_0,par.ch1_1) :
       par.ch1_0,par.ch1_1 = val
-      print('cuts1 = ',par.ch1_0,par.ch1_1)
+      print('cuts1 = {:10.3f} {:10.3f}'.format(par.ch1_0,par.ch1_1))
       slider_ch1.set_val(val)
       image_rgb = calc_image_rgb(par)
       #imax = ax.imshow(image_rgb, origin='lower', interpolation='gaussian')
@@ -422,7 +497,7 @@ def slider_update_ch2(val):
     #print(val)
     if val != (par.ch2_0,par.ch2_1) :
       par.ch2_0,par.ch2_1 = val
-      print('cuts2 = ',par.ch2_0,par.ch2_1)
+      print('cuts2 = {:10.3f} {:10.3f}'.format(par.ch2_0,par.ch2_1))
       slider_ch2.set_val(val)
       image_rgb = calc_image_rgb(par)
       #imax = ax.imshow(image_rgb, origin='lower', interpolation='gaussian')
@@ -434,7 +509,7 @@ def slider_update_ch3(val):
     #print(val)
     if val != (par.ch3_0,par.ch3_1) :
       par.ch3_0,par.ch3_1 = val
-      print('cuts3 = ',par.ch3_0,par.ch3_1)
+      print('cuts3 = {:10.3f} {:10.3f}'.format(par.ch3_0,par.ch3_1))
       slider_ch3.set_val(val)
       image_rgb = calc_image_rgb(par)
       #imax = ax.imshow(image_rgb, origin='lower', interpolation='gaussian')
@@ -497,13 +572,13 @@ slider_ch3_1.on_changed(slider_update_ch3_1)
 
 # RangeSlider
 
-lenx = 0.85
+lenx = 0.80
 ax_ch1 = plt.axes([startx,     starty+0.16, lenx,      0.02], facecolor=axcolor)
 ax_ch2 = plt.axes([startx,     starty+0.13, lenx,      0.02], facecolor=axcolor)
 ax_ch3 = plt.axes([startx,     starty+0.10, lenx,      0.02], facecolor=axcolor)
-slider_ch1 = RangeSlider(ax_ch1, r'R', valmin=c1min-1.*c1std, valmax=c1max+10.*c1std, valfmt="%1.1f", valinit=[c1min,c1max], color=mycol1, dragging=False)
-slider_ch2 = RangeSlider(ax_ch2, r'G', valmin=c2min-1.*c2std, valmax=c2max+10.*c2std, valfmt="%1.1f", valinit=[c2min,c2max], color=mycol2, dragging=False)
-slider_ch3 = RangeSlider(ax_ch3, r'B', valmin=c3min-1.*c3std, valmax=c3max+10.*c3std, valfmt="%1.1f", valinit=[c3min,c3max], color=mycol3, dragging=False)
+slider_ch1 = RangeSlider(ax_ch1, r'R', valmin=c1valmin, valmax=c1valmax, valfmt="%1.3f", valinit=[c1min,c1max], color=mycol1, dragging=False)
+slider_ch2 = RangeSlider(ax_ch2, r'G', valmin=c2valmin, valmax=c2valmax, valfmt="%1.3f", valinit=[c2min,c2max], color=mycol2, dragging=False)
+slider_ch3 = RangeSlider(ax_ch3, r'B', valmin=c3valmin, valmax=c3valmax, valfmt="%1.3f", valinit=[c3min,c3max], color=mycol3, dragging=False)
 slider_ch1.label.set_size(8)
 slider_ch2.label.set_size(8)
 slider_ch3.label.set_size(8)
@@ -514,17 +589,17 @@ slider_ch3.on_changed(slider_update_ch3)
 
 
 
-
 def button_update_save(val):
     global par, ax
-    image_rgb = calc_image_rgb(par)
+    #image_rgb = calc_image_rgb(par)
+    # print('type  =',image_rgb.dtype())
     if par.jpg :
-      print('saving image as rgbfits.jpg')
+      print('saving image as rgbfits.jpg ...')
       plt.imsave('rgbfits.jpg', image_rgb, origin='lower',dpi=100)
     elif par.png :
-      print('saving image as rgbfits.png')
+      print('saving image as rgbfits.png ...')
       plt.imsave('rgbfits.png', image_rgb, origin='lower',dpi=100)
-
+    print('  ... saving done')
 
 ax_save = plt.axes([0.0, 0.97, 0.05, 0.03], facecolor=axcolor)
 button_save = Button(ax_save, 'save')
