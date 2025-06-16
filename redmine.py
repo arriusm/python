@@ -290,6 +290,9 @@ def print_issue(issue,level,last,assigned_to) :
           elif isinstance(value, list) :
             for j in value :
               print('    {:15s}       {}'.format(j['name'],j['value']))
+          elif isinstance(value, dict) :
+            #print(value)
+            print('    {:15s}       (id = {:<3})'.format(value['name'],value['id']))
   return
 
 
@@ -394,7 +397,7 @@ important:
 '''
 
 parser = argparse.ArgumentParser(epilog=help,formatter_class=argparse.RawDescriptionHelpFormatter,
-                                 description='redmine.py  2024-12-05  (Arno Riffeser, USM)\n')
+                                 description='redmine.py  2025-06-16  (Arno Riffeser, USM)\n')
 parser.add_argument('-v', dest='level',       type=int,   default=1,  help='[%(default)s] level')
 parser.add_argument('-p', dest='projID',      type=int,   default=0,  help='[%(default)s] projID')
 parser.add_argument('-i', dest='issueID',     type=int,   default=0,  help='[%(default)s] issueID')
